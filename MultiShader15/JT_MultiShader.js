@@ -1,78 +1,4 @@
-//3456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_
-// (JT: why the numbers? counts columns, helps me keep 80-char-wide listings)
-//
-// TABS set to 2.
-//
-// ORIGINAL SOURCE:
-// RotatingTranslatedTriangle.js (c) 2012 matsuda
-// HIGHLY MODIFIED to make:
-//
-// JT_MultiShader.js  for EECS 351-1, 
-//									Northwestern Univ. Jack Tumblin
 
-/* Show how to use 3 separate VBOs with different verts, attributes & uniforms. 
--------------------------------------------------------------------------------
-	Create a 'VBObox' object/class/prototype & library to collect, hold & use all 
-	data and functions we need to render a set of vertices kept in one Vertex 
-	Buffer Object (VBO) on-screen, including:
-	--All source code for all Vertex Shader(s) and Fragment shader(s) we may use 
-		to render the vertices stored in this VBO;
-	--all variables needed to select and access this object's VBO, shaders, 
-		uniforms, attributes, samplers, texture buffers, and any misc. items. 
-	--all variables that hold values (uniforms, vertex arrays, element arrays) we 
-	  will transfer to the GPU to enable it to render the vertices in our VBO.
-	--all user functions: init(), draw(), adjust(), reload(), empty(), restore().
-	Put all of it into 'JT_VBObox-Lib.js', a separate library file.
-
-USAGE:
-------
-1) If your program needs another shader program, make another VBObox object:
- (e.g. an easy vertex & fragment shader program for drawing a ground-plane grid; 
- a fancier shader program for drawing Gouraud-shaded, Phong-lit surfaces, 
- another shader program for drawing Phong-shaded, Phong-lit surfaces, and
- a shader program for multi-textured bump-mapped Phong-shaded & lit surfaces...)
- 
- HOW:
- a) COPY CODE: create a new VBObox object by renaming a copy of an existing 
- VBObox object already given to you in the VBObox-Lib.js file. 
- (e.g. copy VBObox1 code to make a VBObox3 object).
-
- b) CREATE YOUR NEW, GLOBAL VBObox object.  
- For simplicity, make it a global variable. As you only have ONE of these 
- objects, its global scope is unlikely to cause confusions/errors, and you can
- avoid its too-frequent use as a function argument.
- (e.g. above main(), write:    var phongBox = new VBObox3();  )
-
- c) INITIALIZE: in your JS progam's main() function, initialize your new VBObox;
- (e.g. inside main(), write:  phongBox.init(); )
-
- d) DRAW: in the JS function that performs all your webGL-drawing tasks, draw
- your new VBObox's contents on-screen. 
- (NOTE: as it's a COPY of an earlier VBObox, your new VBObox's on-screen results
-  should duplicate the initial drawing made by the VBObox you copied.  
-  If that earlier drawing begins with the exact same initial position and makes 
-  the exact same animated moves, then it will hide your new VBObox's drawings!
-  --THUS-- be sure to comment out the earlier VBObox's draw() function call  
-  to see the draw() result of your new VBObox on-screen).
-  (e.g. inside drawAll(), add this:  
-      phongBox.switchToMe();
-      phongBox.draw();            )
-
- e) ADJUST: Inside the JS function that animates your webGL drawing by adjusting
- uniforms (updates to ModelMatrix, etc) call the 'adjust' function for each of your
-VBOboxes.  Move all the uniform-adjusting operations from that JS function into the
-'adjust()' functions for each VBObox. 
-
-2) Customize the VBObox contents; add vertices, add attributes, add uniforms.
- ==============================================================================*/
-
-
-// Global Variables  
-//   (These are almost always a BAD IDEA, but here they eliminate lots of
-//    tedious function arguments. 
-//    Later, collect them into just a few global, well-organized objects!)
-// ============================================================================
-// for WebGL usage:--------------------
 var gl;													// WebGL rendering context -- the 'webGL' object
 																// in JavaScript with all its member fcns & data
 var g_canvasID;									// HTML-5 'canvas' element ID#
@@ -138,7 +64,7 @@ var g_posMin1 = -1.0;
 // For mouse/keyboard:------------------------
 var g_show0 = 1;								// 0==Show, 1==Hide VBO0 contents on-screen.
 var g_show1 = 1;								// 	"					"			VBO1		"				"				" 
-var g_show2 = 1;                //  "         "     VBO2    "       "       "
+var g_show2 = 0;                //  "         "     VBO2    "       "       "
 
 function main() {
 //=============================================================================
@@ -166,22 +92,18 @@ function main() {
   }
   gl.clearColor(0.2, 0.2, 0.2, 1);	  // RGBA color for clearing <canvas>
 
-  gl.enable(gl.DEPTH_TEST);
-  gl.clearDepth(0.0);       // each time we 'clear' our depth buffer, set all
-  gl.depthFunc(gl.GREATER); // draw a pixel only if its depth value is GREATER
+   gl.enable(gl.DEPTH_TEST);
+   gl.clearDepth(1000.0);       // each time we 'clear' our depth buffer, set all
+   gl.depthFunc(gl.LESS); // draw a pixel only if its depth value is GREATER
 
-  g_modelMatrix = new Matrix4(); // The model matrix
 	g_viewMatrix = new Matrix4();  // The view matrix
 	g_projMatrix = new Matrix4();  // The projection matrix
-	g_mvpMatrix = new Matrix4();  // The projection matrix
 
   worldBox.init(gl);		// VBO + shaders + uniforms + attribs for our 3D world,
                         // including ground-plane,                       
   part1Box.init(gl);		//  "		"		"  for 1st kind of shading & lighting
 	part2Box.init(gl);    //  "   "   "  for 2nd kind of shading & lighting
 	
-  gl.clearColor(0.2, 0.2, 0.2, 1);	  // RGBA color for clearing <canvas>
-  
   // ==============ANIMATION=============
   // Quick tutorials on synchronous, real-time animation in JavaScript/HTML-5: 
   //    https://webglfundamentals.org/webgl/lessons/webgl-animation.html

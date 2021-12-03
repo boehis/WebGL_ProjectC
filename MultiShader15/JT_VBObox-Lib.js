@@ -290,56 +290,109 @@ function VBObox1() {
   'uniform mat4 u_ModelMatrix;\n' +
   'attribute vec4 a_Pos1;\n' +
   'attribute vec3 a_Colr1;\n'+
-  'attribute float a_PtSiz1; \n' +
+  'attribute vec3 a_Normal;\n' +
   'varying vec3 v_Colr1;\n' +
   //
   'void main() {\n' +
-  '  gl_PointSize = a_PtSiz1;\n' +
-  '  gl_Position = u_ModelMatrix * a_Pos1;\n' +
+  
+  '  gl_Position = u_ModelMatrix * (a_Pos1 + 0.1*vec4(a_Normal, 0));\n' +
   '	 v_Colr1 = a_Colr1;\n' + 
   ' }\n';
-/*
- // SQUARE dots:
-	this.FRAG_SRC = //---------------------- FRAGMENT SHADER source code 
-  'precision mediump float;\n' +
-  'varying vec3 v_Colr1;\n' +
-  'void main() {\n' +
-  '  gl_FragColor = vec4(v_Colr1, 1.0);\n' +  
-  '}\n';
-*/
-/*
- // ROUND FLAT dots:
-	this.FRAG_SRC = //---------------------- FRAGMENT SHADER source code 
-  'precision mediump float;\n' +
-  'varying vec3 v_Colr1;\n' +
-  'void main() {\n' +
-  '  float dist = distance(gl_PointCoord, vec2(0.5, 0.5)); \n' + 
-  '  if(dist < 0.5) {\n' +
-  '    gl_FragColor = vec4(v_Colr1, 1.0);\n' +  
-  '    } else {discard;};' +
-  '}\n';
-*/
+
  // SHADED, sphere-like dots:
 	this.FRAG_SRC = //---------------------- FRAGMENT SHADER source code 
   'precision mediump float;\n' +
   'varying vec3 v_Colr1;\n' +
   'void main() {\n' +
-  '  float dist = distance(gl_PointCoord, vec2(0.5, 0.5)); \n' + 
-  '  if(dist < 0.5) {\n' + 
- 	'  	gl_FragColor = vec4((1.0-2.0*dist)*v_Colr1.rgb, 1.0);\n' +
-  '    } else {discard;};' +
+  '  gl_FragColor = vec4(v_Colr1, 1.0); \n' + 
   '}\n';
 
-	this.vboContents = //---------------------------------------------------------
-		new Float32Array ([					// Array of vertex attribute values we will
-  															// transfer to GPU's vertex buffer object (VBO)
-			// 1 vertex per line: pos1 x,y,z,w;   colr1; r,g,b;   ptSiz1; 
-  	-0.3,  0.7,	0.0, 1.0,		0.0, 1.0, 1.0,  17.0,
-    -0.3, -0.3, 0.0, 1.0,		1.0, 0.0, 1.0,  20.0,
-     0.3, -0.3, 0.0, 1.0,		1.0, 1.0, 0.0,  33.0,
-  ]);	
+  var c30 = Math.sqrt(0.75);					// == cos(30deg) == sqrt(3) / 2
+	var sq2	= Math.sqrt(2.0);						 
+	// for surface normals:
+	var sq23 = Math.sqrt(2.0/3.0)
+	var sq29 = Math.sqrt(2.0/9.0)
+	var sq89 = Math.sqrt(8.0/9.0)
+	var thrd = 1.0/3.0;
+
+	this.vboContents =  new Float32Array([
+    // Vertex coordinates(x,y,z,w) and color (R,G,B) for a new color tetrahedron:
+    // HOW TO BUILD A SYMMETRICAL TETRAHEDRON:
+    //	--define it by 4 'nodes' (locations where we place 1 or more vertices).
+    //	--Each node connects to every other node by an 'edge'.
+    //	--Any 3 nodes chosen will form an equilateral triangle from 3 edges.
+    //	--Every corner of every equilateral triangle forms a 60 degree angle.
+    //	--We can define the 'center' of an equilateral triangle as the point
+    //		location equally distant from each triangle corner.  
+    //		Equivalently, the center point is the intersection of the lines that 
+    //		bisect the 60-degree angles at each corner of the triangle.
+    //	--Begin by defining an equilateral triangle in xy plane with center point 
+    //		at the origin. Create each node by adding a unit vector to the origin;
+    //		node n1 at (0,1,0);
+    //	  node n2 at ( cos30, -0.5, 0)  (30 degrees below x axis)
+    //		node n3 at (-cos30, -0.5, 0)  (Note that cos30 = sqrt(3)/2).
+    //	--Note the triangle's 'height' in y is 1.5 (from y=-0.5 to y= +1.0).
+    //	--Choose node on +z axis at location that will form equilateral triangles
+    //		with the sides of the n1,n2,n3 triangle edges.
+    //	--Look carefully at the n0,n3,n1 triangle; its height (1.5) stretches from
+    //		(0,-0.5,0) to node n0 at (0,0,zheight).  Thus 1.5^2 = 0.5^2 + zheight^2,
+    //		or 2.25 = 0.25 + zHeight^2; thus zHeight==sqrt2.
+    // 		node n0 == Apex on +z axis; equilateral triangle base at z=0.
+    //  -- SURFACE NORMALS?
+    //		See: '2016.02.17.HowToBuildTetrahedron.pdf' on Canvas
+    //
+  /*	Nodes:
+       0.0,	 0.0, sq2, 1.0,			0.0, 	0.0,	1.0,	// Node 0 (apex, +z axis;  blue)
+       c30, -0.5, 0.0, 1.0, 		1.0,  0.0,  0.0, 	// Node 1 (base: lower rt; red)
+       0.0,  1.0, 0.0, 1.0,  		0.0,  1.0,  0.0,	// Node 2 (base: +y axis;  grn)
+      -c30, -0.5, 0.0, 1.0, 		1.0,  1.0,  1.0, 	// Node 3 (base:lower lft; white)
+  */
   
-	this.vboVerts = 3;							// # of vertices held in 'vboContents' array;
+  // Face 0: (right side).  Unit Normal Vector: N0 = (sq23, sq29, thrd)
+       // Node 0 (apex, +z axis; 			color--blue, 				surf normal (all verts):
+            0.0,	 0.0, sq2, 1.0,			0.0, 	0.0,	1.0,		 sq23,	sq29, thrd,
+       // Node 1 (base: lower rt; red)
+             c30, -0.5, 0.0, 1.0, 			1.0,  0.0,  0.0, 		sq23,	sq29, thrd,
+       // Node 2 (base: +y axis;  grn)
+             0.0,  1.0, 0.0, 1.0,  		0.0,  1.0,  0.0,		sq23,	sq29, thrd, 
+  // Face 1: (left side).		Unit Normal Vector: N1 = (-sq23, sq29, thrd)
+       // Node 0 (apex, +z axis;  blue)
+             0.0,	 0.0, sq2, 1.0,			0.0, 	0.0,	1.0,	 -sq23,	sq29, thrd,
+       // Node 2 (base: +y axis;  grn)
+             0.0,  1.0, 0.0, 1.0,  		0.0,  1.0,  0.0,	 -sq23,	sq29, thrd,
+       // Node 3 (base:lower lft; white)
+            -c30, -0.5, 0.0, 1.0, 		1.0,  1.0,  1.0, 	 -sq23,	sq29,	thrd,
+  // Face 2: (lower side) 	Unit Normal Vector: N2 = (0.0, -sq89, thrd)
+       // Node 0 (apex, +z axis;  blue) 
+             0.0,	 0.0, sq2, 1.0,			0.0, 	0.0,	1.0,		0.0, -sq89,	thrd,
+      // Node 3 (base:lower lft; white)
+            -c30, -0.5, 0.0, 1.0, 		1.0,  1.0,  1.0, 		0.0, -sq89,	thrd,          																							//0.0, 0.0, 0.0, // Normals debug
+       // Node 1 (base: lower rt; red) 
+             c30, -0.5, 0.0, 1.0, 			1.0,  0.0,  0.0, 		0.0, -sq89,	thrd,
+  // Face 3: (base side)  Unit Normal Vector: N2 = (0.0, 0.0, -1.0)
+      // Node 3 (base:lower lft; white)
+            -c30, -0.5, 0.0, 1.0, 		1.0,  1.0,  1.0, 		0.0, 	0.0, -1.0,
+      // Node 2 (base: +y axis;  grn)
+             0.0,  1.0, 0.0, 1.0,  		0.0,  1.0,  0.0,		0.0, 	0.0, -1.0,
+      // Node 1 (base: lower rt; red)
+             c30, -0.5, 0.0, 1.0, 			1.0,  0.0,  0.0, 		0.0, 	0.0, -1.0,
+       
+         // Drawing Axes: Draw them using gl.LINES drawing primitive;
+         //--------------------------------------------------------------
+         // +x axis RED; +y axis GREEN; +z axis BLUE; origin: GRAY
+         // (I added 'normal vectors' to stay compatible with tetrahedron verts)
+  // X axis line 	(origin: gray -- endpoint: red. 			Normal Vector: +y
+       0.0,  0.0,  0.0, 1.0,			0.3,  0.3,  0.3,			0.0, 	1.0,	0.0, 
+       1.3,  0.0,  0.0, 1.0,			1.0,  0.3,  0.3,			0.0, 	1.0, 	0.0,
+  // Y axis line:	(origin: gray -- endpoint: green			Normal Vector: +z)
+       0.0,  0.0,  0.0, 1.0,    	0.3,  0.3,  0.3,			0.0,	0.0,	1.0,
+       0.0,  1.3,  0.0, 1.0,			0.3,  1.0,  0.3,			0.0, 	0.0,	1.0,
+  // Z axis line: (origin: gray -- endpoint: blue				Normal Vector: +x)
+       0.0,  0.0,  0.0, 1.0,			0.3,  0.3,  0.3,			1.0, 	0.0,	0.0,
+       0.0,  0.0,  1.3, 1.0,			0.3,  0.3,  1.0,			1.0, 	0.0,	0.0,
+    ]);
+  
+	this.vboVerts = this.vboContents.length / 10;							// # of vertices held in 'vboContents' array;
 	this.FSIZE = this.vboContents.BYTES_PER_ELEMENT;  
 	                              // bytes req'd by 1 vboContents array element;
 																// (why? used to compute stride and offset 
@@ -357,10 +410,10 @@ function VBObox1() {
   this.vboFcount_a_Pos1 =  4;    // # of floats in the VBO needed to store the
                                 // attribute named a_Pos1. (4: x,y,z,w values)
   this.vboFcount_a_Colr1 = 3;   // # of floats for this attrib (r,g,b values)
-  this.vboFcount_a_PtSiz1 = 1;  // # of floats for this attrib (just one!)   
+  this.vboFcount_a_Normal = 3;  // # of floats for this attrib (just one!)   
   console.assert((this.vboFcount_a_Pos1 +     // check the size of each and
                   this.vboFcount_a_Colr1 +
-                  this.vboFcount_a_PtSiz1) *   // every attribute in our VBO
+                  this.vboFcount_a_Normal) *   // every attribute in our VBO
                   this.FSIZE == this.vboStride, // for agreeement with'stride'
                   "Uh oh! VBObox1.vboStride disagrees with attribute-size values!");
                   
@@ -371,7 +424,7 @@ function VBObox1() {
                                 // == 4 floats * bytes/float
                                 //# of bytes from START of vbo to the START
                                 // of 1st a_Colr1 attrib value in vboContents[]
-  this.vboOffset_a_PtSiz1 =(this.vboFcount_a_Pos1 +
+  this.vboOffset_a_Normal =(this.vboFcount_a_Pos1 +
                             this.vboFcount_a_Colr1) * this.FSIZE; 
                                 // == 7 floats * bytes/float
                                 // # of bytes from START of vbo to the START
@@ -385,7 +438,7 @@ function VBObox1() {
 								          //------Attribute locations in our shaders:
 	this.a_Pos1Loc;							  // GPU location: shader 'a_Pos1' attribute
 	this.a_Colr1Loc;							// GPU location: shader 'a_Colr1' attribute
-	this.a_PtSiz1Loc;							// GPU location: shader 'a_PtSiz1' attribute
+	this.a_NormalLoc;							// GPU location: shader 'a_PtSiz1' attribute
 	
 	            //---------------------- Uniform locations &values in our shaders
 	this.ModelMatrix = new Matrix4();	// Transforms CVV axes to model axes.
@@ -467,8 +520,8 @@ VBObox1.prototype.init = function() {
     						'.init() failed to get the GPU location of attribute a_Colr1');
     return -1;	// error exit.
   }
-  this.a_PtSiz1Loc = gl.getAttribLocation(this.shaderLoc, 'a_PtSiz1');
-  if(this.a_PtSiz1Loc < 0) {
+  this.a_NormalLoc = gl.getAttribLocation(this.shaderLoc, 'a_Normal');
+  if(this.a_NormalLoc < 0) {
     console.log(this.constructor.name + 
 	    					'.init() failed to get the GPU location of attribute a_PtSiz1');
 	  return -1;	// error exit.
@@ -533,13 +586,13 @@ VBObox1.prototype.switchToMe = function () {
   gl.vertexAttribPointer(this.a_Colr1Loc, this.vboFcount_a_Colr1,
                          gl.FLOAT, false, 
   						           this.vboStride,  this.vboOffset_a_Colr1);
-  gl.vertexAttribPointer(this.a_PtSiz1Loc,this.vboFcount_a_PtSiz1, 
+  gl.vertexAttribPointer(this.a_NormalLoc,this.vboFcount_a_Normal, 
                          gl.FLOAT, false, 
-							           this.vboStride,	this.vboOffset_a_PtSiz1);	
+							           this.vboStride,	this.vboOffset_a_Normal);	
   //-- Enable this assignment of the attribute to its' VBO source:
   gl.enableVertexAttribArray(this.a_Pos1Loc);
   gl.enableVertexAttribArray(this.a_Colr1Loc);
-  gl.enableVertexAttribArray(this.a_PtSiz1Loc);
+  gl.enableVertexAttribArray(this.a_NormalLoc);
 }
 
 VBObox1.prototype.isReady = function() {
@@ -574,8 +627,8 @@ VBObox1.prototype.adjust = function() {
   						'.adjust() call you needed to call this.switchToMe()!!');
   }
 	// Adjust values for our uniforms,
-  this.ModelMatrix.setRotate(g_angleNow1, 0, 0, 1);	// -spin drawing axes,
-  this.ModelMatrix.translate(0.35, -0.15, 0);						// then translate them.
+  this.ModelMatrix.setRotate(0, 0, 0, 1);	// -spin drawing axes,
+  this.ModelMatrix.translate(0.35, -0.15, 0.1);						// then translate them.
   //  Transfer new uniforms' values to the GPU:-------------
   // Send  new 'ModelMat' values to the GPU's 'u_ModelMat1' uniform:
   //console.log(getMVPMatrix(this.ModelMatrix)); 
@@ -596,11 +649,11 @@ VBObox1.prototype.draw = function() {
   }
   
   // ----------------------------Draw the contents of the currently-bound VBO:
-  gl.drawArrays(gl.POINTS,		    // select the drawing primitive to draw:
+  gl.drawArrays(gl.TRIANGLES,		    // select the drawing primitive to draw:
                   // choices: gl.POINTS, gl.LINES, gl.LINE_STRIP, gl.LINE_LOOP, 
                   //          gl.TRIANGLES, gl.TRIANGLE_STRIP,
   							0, 								// location of 1st vertex to draw;
-  							this.vboVerts);		// number of vertices to draw on-screen.
+  							12);		// number of vertices to draw on-screen.
 }
 
 
