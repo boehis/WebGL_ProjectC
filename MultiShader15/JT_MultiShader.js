@@ -78,9 +78,33 @@ var gl;													// WebGL rendering context -- the 'webGL' object
 var g_canvasID;									// HTML-5 'canvas' element ID#
 
 // For multiple VBOs & Shaders:-----------------
-worldBox = new VBObox0();		  // Holds VBO & shaders for 3D 'world' ground-plane grid, etc;
+worldBox = new WorldBox();		  // Holds VBO & shaders for 3D 'world' ground-plane grid, etc;
 part1Box = new VBObox1();		  // "  "  for first set of custom-shaded 3D parts
 part2Box = new VBObox2();     // "  "  for second set of custom-shaded 3D parts
+
+var floatsPerVertex = 7;	// # of Float32Array elements used for each vertex
+
+
+var g_viewMatrix;
+var g_projMatrix;
+
+// Global Variables
+var g_fov_angle = 30.0
+var g_fov_ner = 1.0
+var g_fov_far = 70.0
+
+var g_eye_point_v = [5.0,0.0,1.0];
+var g_up_v = [0.0,0.0,1.0];
+var g_theat = Math.PI;
+var g_aim_z = 0.0;
+var g_move_vel = 0.08;
+var g_turn_v = Math.PI / 180;
+var g_tilt_v = 0.01;
+
+
+var key_codes = []
+
+//--------------------------------------
 
 // For animation:---------------------
 var g_lastMS = Date.now();			// Timestamp (in milliseconds) for our 
@@ -143,27 +167,14 @@ function main() {
   gl.clearColor(0.2, 0.2, 0.2, 1);	  // RGBA color for clearing <canvas>
 
   gl.enable(gl.DEPTH_TEST);
-
-  //----------------SOLVE THE 'REVERSED DEPTH' PROBLEM:------------------------
-  // IF the GPU doesn't transform our vertices by a 3D Camera Projection Matrix
-  // (and it doesn't -- not until Project B) then the GPU will compute reversed 
-  // depth values:  depth==0 for vertex z == -1;   (but depth = 0 means 'near') 
-  //		    depth==1 for vertex z == +1.   (and depth = 1 means 'far').
-  //
-  // To correct the 'REVERSED DEPTH' problem, we could:
-  //  a) reverse the sign of z before we render it (e.g. scale(1,1,-1); ugh.)
-  //  b) reverse the usage of the depth-buffer's stored values, like this:
-  gl.enable(gl.DEPTH_TEST); // enabled by default, but let's be SURE.
-
   gl.clearDepth(0.0);       // each time we 'clear' our depth buffer, set all
-                            // pixel depths to 0.0  (1.0 is DEFAULT)
   gl.depthFunc(gl.GREATER); // draw a pixel only if its depth value is GREATER
-                            // than the depth buffer's stored value.
-                            // (gl.LESS is DEFAULT; reverse it!)
-  //------------------end 'REVERSED DEPTH' fix---------------------------------
 
+  g_modelMatrix = new Matrix4(); // The model matrix
+	g_viewMatrix = new Matrix4();  // The view matrix
+	g_projMatrix = new Matrix4();  // The projection matrix
+	g_mvpMatrix = new Matrix4();  // The projection matrix
 
-  // Initialize each of our 'vboBox' objects: 
   worldBox.init(gl);		// VBO + shaders + uniforms + attribs for our 3D world,
                         // including ground-plane,                       
   part1Box.init(gl);		//  "		"		"  for 1st kind of shading & lighting
@@ -193,14 +204,18 @@ function main() {
                                 // self-calling animation function. 
     requestAnimationFrame(tick, g_canvasID); // browser callback request; wait
                                 // til browser is ready to re-draw canvas, then
-    timerAll();  // Update all time-varying params, and
+    animate();  // Update all time-varying params, and
     drawAll();                // Draw all the VBObox contents
     };
   //------------------------------------
   tick();                       // do it again!
+
+  	//KEY:
+	window.addEventListener("keydown", myKeyDown, false);
+	window.addEventListener("keyup", myKeyUp, false);
 }
 
-function timerAll() {
+function animate() {
 //=============================================================================
 // Find new values for all time-varying parameters used for on-screen drawing
   // use local variables to find the elapsed time.
@@ -252,12 +267,110 @@ function timerAll() {
     g_posRate1 = -g_posRate1;   // reverse direction of change.
     }
 
+    
+	//Viewing direction
+	key_codes.forEach(animateViewMove)
+
+}
+function animateViewMove(key_code) {
+	
+	var eye_aim = calcAimPoint().map(function(item, index) {
+		return (item - g_eye_point_v[index]);
+	})
+	var direction_fwd = unitify(eye_aim).map(function(item) {
+		return item*g_move_vel;
+	})
+	var direction_side = unitify(cartesian(g_up_v,eye_aim)).map(function(item) {
+		return item*g_move_vel;
+	})
+	
+  switch (key_code) {
+
+    //----------------Arrow keys------------------------
+    case "ArrowLeft":
+      direction_side.forEach(function(item, index) {
+				g_eye_point_v[index] += item;
+			})
+      break;
+    case "ArrowRight":
+      direction_side.forEach(function(item, index) {
+				g_eye_point_v[index] -= item;
+			})
+      break;
+    case "ArrowUp":
+			direction_fwd.forEach(function(item, index) {
+				g_eye_point_v[index] += item;
+			})
+      break;
+    case "ArrowDown":
+      direction_fwd.forEach(function(item, index) {
+				g_eye_point_v[index] -= item;
+			})
+      break;
+		case "KeyO":
+      g_up_v.forEach(function(item, index) {
+				g_eye_point_v[index] += item*g_move_vel;
+			})
+      break;
+		case "KeyI":
+      g_up_v.forEach(function(item, index) {
+				g_eye_point_v[index] -= item*g_move_vel;
+			})
+      break;
+		case "KeyA":
+      g_theat += g_turn_v;
+			g_theat %= (Math.PI*2);
+      break;
+			case "KeyD":
+      g_theat -= g_turn_v;
+			g_theat %= (Math.PI*2);
+			break;
+		case "KeyS":
+			g_aim_z -= g_tilt_v
+			break;
+		case "KeyW":
+			g_aim_z += g_tilt_v
+      break;
+    default:
+      break;
+  }
+}
+
+function getMVPMatrix(modelMat) {	
+  var mvpMat = new Matrix4()
+  mvpMat.set(g_projMatrix).multiply(g_viewMatrix).multiply(modelMat);
+	return mvpMat
 }
 
 function drawAll() {
-//=============================================================================
-  // Clear on-screen HTML-5 <canvas> object:
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+	
+	var aspect = gl.canvas.width /gl.canvas.height
+	var aim = calcAimPoint();
+	g_viewMatrix.setLookAt(
+		g_eye_point_v[0],
+		g_eye_point_v[1],
+		g_eye_point_v[2],
+		aim[0],
+		aim[1],
+		aim[2],
+		g_up_v[0],
+		g_up_v[1],
+		g_up_v[2]);
+	
+	g_projMatrix.setPerspective(g_fov_angle, aspect ,g_fov_ner, g_fov_far);
+	gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+	drawShapes();   // Draw shapes
+
+}
+function calcAimPoint() {
+	return [
+		g_eye_point_v[0] + Math.cos(g_theat),
+		g_eye_point_v[1] + Math.sin(g_theat),
+		g_eye_point_v[2] + g_aim_z]
+}
+
+function drawShapes() {
 
 var b4Draw = Date.now();
 var b4Wait = b4Draw - g_lastMS;
@@ -306,4 +419,34 @@ function VBO2toggle() {
   if(g_show2 != 1) g_show2 = 1;			// show,
   else g_show2 = 0;									// hide.
   console.log('g_show2: '+g_show2);
+}
+
+
+function myKeyDown(key) {
+	if(key_codes.indexOf(key.code) == -1) {
+		key_codes.push(key.code)
+	} 
+}
+
+function myKeyUp(key) {
+	var index = key_codes.indexOf(key.code)
+	if(index != -1){
+		key_codes.splice(index,1)
+	}
+}
+
+function cartesian(a,b) {
+	return [
+		a[1]*b[2] - a[2]*b[1],
+		a[2]*b[0] - a[0]*b[2],
+		a[0]*b[1] - a[1]*b[0],
+	]
+}
+function unitify(a) {
+	var len = Math.sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2])
+	return [
+		a[0]*len,
+		a[1]*len,
+		a[2]*len
+	]
 }

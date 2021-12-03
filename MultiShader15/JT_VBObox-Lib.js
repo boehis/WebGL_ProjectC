@@ -1,16 +1,16 @@
 
-function VBObox0() {
+function WorldBox() {
   
 	this.VERT_SRC =	//--------------------- VERTEX SHADER source code 
   'precision highp float;\n' +				// req'd in OpenGL ES if we use 'float'
   //
-  'uniform mat4 u_ModelMat0;\n' +
+  'uniform mat4 u_MvpMatrix0;\n' +
   'attribute vec4 a_Pos0;\n' +
   'attribute vec3 a_Colr0;\n'+
   'varying vec3 v_Colr0;\n' +
   //
   'void main() {\n' +
-  '  gl_Position = u_ModelMat0 * a_Pos0;\n' +
+  '  gl_Position = u_MvpMatrix0 * a_Pos0;\n' +
   '	 v_Colr0 = a_Colr0;\n' +
   ' }\n';
 
@@ -21,19 +21,9 @@ function VBObox0() {
   '  gl_FragColor = vec4(v_Colr0, 1.0);\n' + 
   '}\n';
 
-	this.vboContents = 	new Float32Array ([						// Array of vertex attribute values we will
-  															// transfer to GPU's vertex buffer object (VBO)
-	// 1st triangle:
-  	 0.0,	 0.5,	0.0, 1.0,		1.0, 0.0, 0.0, //1 vertex:pos x,y,z,w; color: r,g,b
-    -0.5, -0.5, 0.0, 1.0,		0.0, 1.0, 0.0,
-     0.5, -0.5, 0.0, 1.0,		0.0, 0.0, 1.0,
- // 2nd triangle:
-		 0.0,  0.0, 0.0, 1.0,   1.0, 1.0, 1.0,		// (white)
-		 0.3,  0.0, 0.0, 1.0,   0.0, 0.0, 1.0,		// (blue)
-		 0.0,  0.3, 0.0, 1.0,   0.5, 0.5, 0.5,		// (gray)
-		 ]);
+	this.vboContents = 	makeGroundGrid()
 
-	this.vboVerts = 6;						// # of vertices held in 'vboContents' array
+	this.vboVerts = this.vboContents.length / 7.0;						// # of vertices held in 'vboContents' array
 	this.FSIZE = this.vboContents.BYTES_PER_ELEMENT;
 	                              // bytes req'd by 1 vboContents array element;
 																// (why? used to compute stride and offset 
@@ -75,10 +65,10 @@ function VBObox0() {
 
 	            //---------------------- Uniform locations &values in our shaders
 	this.ModelMat = new Matrix4();	// Transforms CVV axes to model axes.
-	this.u_ModelMatLoc;							// GPU location for u_ModelMat uniform
+	this.u_MvpMatrix0;							// GPU location for u_ModelMat uniform
 }
 
-VBObox0.prototype.init = function() {
+WorldBox.prototype.init = function() {
 //=============================================================================
 // Prepare the GPU to use all vertices, GLSL shaders, attributes, & uniforms 
 // kept in this VBObox. (This function usually called only once, within main()).
@@ -112,33 +102,14 @@ VBObox0.prototype.init = function() {
     						'.init() failed to create VBO in GPU. Bye!'); 
     return;
   }
-  // Specify the purpose of our newly-created VBO on the GPU.  Your choices are:
-  //	== "gl.ARRAY_BUFFER" : the VBO holds vertices, each made of attributes 
-  // (positions, colors, normals, etc), or 
-  //	== "gl.ELEMENT_ARRAY_BUFFER" : the VBO holds indices only; integer values 
-  // that each select one vertex from a vertex array stored in another VBO.
+
   gl.bindBuffer(gl.ARRAY_BUFFER,	      // GLenum 'target' for this GPU buffer 
   								this.vboLoc);				  // the ID# the GPU uses for this buffer.
 
-  // Fill the GPU's newly-created VBO object with the vertex data we stored in
-  //  our 'vboContents' member (JavaScript Float32Array object).
-  //  (Recall gl.bufferData() will evoke GPU's memory allocation & management: 
-  //    use gl.bufferSubData() to modify VBO contents without changing VBO size)
   gl.bufferData(gl.ARRAY_BUFFER, 			  // GLenum target(same as 'bindBuffer()')
  					 				this.vboContents, 		// JavaScript Float32Array
   							 	gl.STATIC_DRAW);			// Usage hint.
-  //	The 'hint' helps GPU allocate its shared memory for best speed & efficiency
-  //	(see OpenGL ES specification for more info).  Your choices are:
-  //		--STATIC_DRAW is for vertex buffers rendered many times, but whose 
-  //				contents rarely or never change.
-  //		--DYNAMIC_DRAW is for vertex buffers rendered many times, but whose 
-  //				contents may change often as our program runs.
-  //		--STREAM_DRAW is for vertex buffers that are rendered a small number of 
-  // 			times and then discarded; for rapidly supplied & consumed VBOs.
 
-  // c1) Find All Attributes:---------------------------------------------------
-  //  Find & save the GPU location of all our shaders' attribute-variables and 
-  //  uniform-variables (for switchToMe(), adjust(), draw(), reload(),etc.)
   this.a_PosLoc = gl.getAttribLocation(this.shaderLoc, 'a_Pos0');
   if(this.a_PosLoc < 0) {
     console.log(this.constructor.name + 
@@ -153,45 +124,19 @@ VBObox0.prototype.init = function() {
   }
   // c2) Find All Uniforms:-----------------------------------------------------
   //Get GPU storage location for each uniform var used in our shader programs: 
-	this.u_ModelMatLoc = gl.getUniformLocation(this.shaderLoc, 'u_ModelMat0');
-  if (!this.u_ModelMatLoc) { 
+	this.u_MvpMatrix0 = gl.getUniformLocation(this.shaderLoc, 'u_MvpMatrix0');
+  if (!this.u_MvpMatrix0) { 
     console.log(this.constructor.name + 
     						'.init() failed to get GPU location for u_ModelMat1 uniform');
     return;
   }  
 }
 
-VBObox0.prototype.switchToMe = function() {
-//==============================================================================
-// Set GPU to use this VBObox's contents (VBO, shader, attributes, uniforms...)
-//
-// We only do this AFTER we called the init() function, which does the one-time-
-// only setup tasks to put our VBObox contents into GPU memory.  !SURPRISE!
-// even then, you are STILL not ready to draw our VBObox's contents onscreen!
-// We must also first complete these steps:
-//  a) tell the GPU to use our VBObox's shader program (already in GPU memory),
-//  b) tell the GPU to use our VBObox's VBO  (already in GPU memory),
-//  c) tell the GPU to connect the shader program's attributes to that VBO.
+WorldBox.prototype.switchToMe = function() {
 
-// a) select our shader program:
   gl.useProgram(this.shaderLoc);	
-//		Each call to useProgram() selects a shader program from the GPU memory,
-// but that's all -- it does nothing else!  Any previously used shader program's 
-// connections to attributes and uniforms are now invalid, and thus we must now
-// establish new connections between our shader program's attributes and the VBO
-// we wish to use.  
-  
-// b) call bindBuffer to disconnect the GPU from its currently-bound VBO and
-//  instead connect to our own already-created-&-filled VBO.  This new VBO can 
-//    supply values to use as attributes in our newly-selected shader program:
 	gl.bindBuffer(gl.ARRAY_BUFFER,	        // GLenum 'target' for this GPU buffer 
 										this.vboLoc);			    // the ID# the GPU uses for our VBO.
-
-// c) connect our newly-bound VBO to supply attribute variable values for each
-// vertex to our SIMD shader program, using 'vertexAttribPointer()' function.
-// this sets up data paths from VBO to our shader units:
-  // 	Here's how to use the almost-identical OpenGL version of this function:
-	//		http://www.opengl.org/sdk/docs/man/xhtml/glVertexAttribPointer.xml )
   gl.vertexAttribPointer(
 		this.a_PosLoc,//index == ID# for the attribute var in your GLSL shader pgm;
 		this.vboFcount_a_Pos0,// # of floats used by this attribute: 1,2,3 or 4?
@@ -217,7 +162,7 @@ VBObox0.prototype.switchToMe = function() {
   gl.enableVertexAttribArray(this.a_ColrLoc);
 }
 
-VBObox0.prototype.isReady = function() {
+WorldBox.prototype.isReady = function() {
 //==============================================================================
 // Returns 'true' if our WebGL rendering context ('gl') is ready to render using
 // this objects VBO and shader program; else return false.
@@ -238,7 +183,7 @@ var isOK = true;
   return isOK;
 }
 
-VBObox0.prototype.adjust = function() {
+WorldBox.prototype.adjust = function() {
 //==============================================================================
 // Update the GPU to newer, current values we now store for 'uniform' vars on 
 // the GPU; and (if needed) update each attribute's stride and offset in VBO.
@@ -249,18 +194,20 @@ VBObox0.prototype.adjust = function() {
   						'.adjust() call you needed to call this.switchToMe()!!');
   }  
 	// Adjust values for our uniforms,
-  this.ModelMat.setRotate(g_angleNow0, 0, 0, 1);	  // rotate drawing axes,
-  this.ModelMat.translate(0.35, 0, 0);							// then translate them.
+  this.ModelMat.setRotate(0, 0, 0, 1);	  // rotate drawing axes,
+  this.ModelMat.translate(0, 0, 0);							// then translate them.
   //  Transfer new uniforms' values to the GPU:-------------
   // Send  new 'ModelMat' values to the GPU's 'u_ModelMat1' uniform: 
-  gl.uniformMatrix4fv(this.u_ModelMatLoc,	// GPU location of the uniform
+  
+  gl.uniformMatrix4fv(this.u_MvpMatrix0,	// GPU location of the uniform
   										false, 				// use matrix transpose instead?
-  										this.ModelMat.elements);	// send data from Javascript.
+  										getMVPMatrix(this.ModelMat).elements);	// send data from Javascript.
   // Adjust the attributes' stride and offset (if necessary)
   // (use gl.vertexAttribPointer() calls and gl.enableVertexAttribArray() calls)
+  
 }
 
-VBObox0.prototype.draw = function() {
+WorldBox.prototype.draw = function() {
 //=============================================================================
 // Render current VBObox contents.
 
@@ -269,15 +216,16 @@ VBObox0.prototype.draw = function() {
         console.log('ERROR! before' + this.constructor.name + 
   						'.draw() call you needed to call this.switchToMe()!!');
   }  
+
   // ----------------------------Draw the contents of the currently-bound VBO:
-  gl.drawArrays(gl.TRIANGLES, 	    // select the drawing primitive to draw,
+  gl.drawArrays(gl.LINES, 	    // select the drawing primitive to draw,
                   // choices: gl.POINTS, gl.LINES, gl.LINE_STRIP, gl.LINE_LOOP, 
                   //          gl.TRIANGLES, gl.TRIANGLE_STRIP, ...
   								0, 								// location of 1st vertex to draw;
   								this.vboVerts);		// number of vertices to draw on-screen.
 }
 
-VBObox0.prototype.reload = function() {
+WorldBox.prototype.reload = function() {
 //=============================================================================
 // Over-write current values in the GPU inside our already-created VBO: use 
 // gl.bufferSubData() call to re-transfer some or all of our Float32Array 
@@ -629,11 +577,13 @@ VBObox1.prototype.adjust = function() {
   this.ModelMatrix.setRotate(g_angleNow1, 0, 0, 1);	// -spin drawing axes,
   this.ModelMatrix.translate(0.35, -0.15, 0);						// then translate them.
   //  Transfer new uniforms' values to the GPU:-------------
-  // Send  new 'ModelMat' values to the GPU's 'u_ModelMat1' uniform: 
+  // Send  new 'ModelMat' values to the GPU's 'u_ModelMat1' uniform:
+  //console.log(getMVPMatrix(this.ModelMatrix)); 
   gl.uniformMatrix4fv(this.u_ModelMatrixLoc,	// GPU location of the uniform
   										false, 										// use matrix transpose instead?
-  										this.ModelMatrix.elements);	// send data from Javascript.
-}
+  										getMVPMatrix(this.ModelMatrix).elements);	// send data from Javascript.
+
+                    }
 
 VBObox1.prototype.draw = function() {
 //=============================================================================
@@ -983,7 +933,7 @@ VBObox2.prototype.adjust = function() {
   // Send  new 'ModelMat' values to the GPU's 'u_ModelMat1' uniform: 
   gl.uniformMatrix4fv(this.u_ModelMatrixLoc,	  // GPU location of the uniform
   										false, 										// use matrix transpose instead?
-  										this.ModelMatrix.elements);	// send data from Javascript.
+  										getMVPMatrix(this.ModelMatrix).elements);	// send data from Javascript.
   // Adjust values in VBOcontents array-----------------------------------------
   // Make one dot-size grow/shrink;
   this.vboContents[15] = 15.0*(1.0 + Math.cos(Math.PI * 3.0 * g_angleNow1 / 180.0)); // radians
