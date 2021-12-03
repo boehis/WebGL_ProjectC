@@ -288,23 +288,26 @@ function VBObox1() {
   'precision highp float;\n' +				// req'd in OpenGL ES if we use 'float'
   //
   'uniform mat4 u_ModelMatrix;\n' +
+  'uniform mat4 u_NormalMatrix;\n' +
   'attribute vec4 a_Pos1;\n' +
   'attribute vec3 a_Colr1;\n'+
   'attribute vec3 a_Normal;\n' +
-  'varying vec3 v_Colr1;\n' +
+  'varying vec4 v_Colr1;\n' +
   //
   'void main() {\n' +
-  
-  '  gl_Position = u_ModelMatrix * (a_Pos1 + 0.1*vec4(a_Normal, 0));\n' +
-  '	 v_Colr1 = a_Colr1;\n' + 
+  'vec4 transVec = u_NormalMatrix * vec4(a_Normal, 0.0);\n' +
+  'vec3 normVec = normalize(transVec.xyz);\n' +
+  'vec3 lightVec = vec3(1.0, 0.0, 1.0);\n' +			
+  '  gl_Position = u_ModelMatrix * a_Pos1;\n' +
+  '	 v_Colr1 = vec4(a_Colr1*dot(normVec,lightVec), 1.0);\n' + 
   ' }\n';
 
  // SHADED, sphere-like dots:
 	this.FRAG_SRC = //---------------------- FRAGMENT SHADER source code 
   'precision mediump float;\n' +
-  'varying vec3 v_Colr1;\n' +
+  'varying vec4 v_Colr1;\n' +
   'void main() {\n' +
-  '  gl_FragColor = vec4(v_Colr1, 1.0); \n' + 
+  '  gl_FragColor = v_Colr1; \n' + 
   '}\n';
 
   var c30 = Math.sqrt(0.75);					// == cos(30deg) == sqrt(3) / 2
@@ -443,6 +446,8 @@ function VBObox1() {
 	            //---------------------- Uniform locations &values in our shaders
 	this.ModelMatrix = new Matrix4();	// Transforms CVV axes to model axes.
 	this.u_ModelMatrixLoc;						// GPU location for u_ModelMat uniform
+	this.NormalMatrix = new Matrix4();						// GPU location for u_ModelMat uniform
+	this.u_NormalMatrixLoc;						// GPU location for u_ModelMat uniform
 };
 
 
@@ -528,10 +533,16 @@ VBObox1.prototype.init = function() {
   }
   // c2) Find All Uniforms:-----------------------------------------------------
   //Get GPU storage location for each uniform var used in our shader programs: 
- this.u_ModelMatrixLoc = gl.getUniformLocation(this.shaderLoc, 'u_ModelMatrix');
+  this.u_ModelMatrixLoc = gl.getUniformLocation(this.shaderLoc, 'u_ModelMatrix');
   if (!this.u_ModelMatrixLoc) { 
     console.log(this.constructor.name + 
     						'.init() failed to get GPU location for u_ModelMatrix uniform');
+    return;
+  }
+  this.u_NormalMatrixLoc = gl.getUniformLocation(this.shaderLoc, 'u_NormalMatrix');
+  if (!this.u_NormalMatrixLoc) { 
+    console.log(this.constructor.name + 
+    						'.init() failed to get GPU location for u_NormalMatrix uniform');
     return;
   }
 }
@@ -627,16 +638,22 @@ VBObox1.prototype.adjust = function() {
   						'.adjust() call you needed to call this.switchToMe()!!');
   }
 	// Adjust values for our uniforms,
-  this.ModelMatrix.setRotate(0, 0, 0, 1);	// -spin drawing axes,
+  this.ModelMatrix.setRotate(g_angleNow0, 0, 0, 1);	// -spin drawing axes,
   this.ModelMatrix.translate(0.35, -0.15, 0.1);						// then translate them.
   //  Transfer new uniforms' values to the GPU:-------------
   // Send  new 'ModelMat' values to the GPU's 'u_ModelMat1' uniform:
   //console.log(getMVPMatrix(this.ModelMatrix)); 
   gl.uniformMatrix4fv(this.u_ModelMatrixLoc,	// GPU location of the uniform
-  										false, 										// use matrix transpose instead?
-  										getMVPMatrix(this.ModelMatrix).elements);	// send data from Javascript.
+    false, 										// use matrix transpose instead?
+    getMVPMatrix(this.ModelMatrix).elements);	// send data from Javascript.
 
-                    }
+  
+  this.NormalMatrix.setInverseOf(this.ModelMatrix)
+  this.NormalMatrix.transpose()
+  gl.uniformMatrix4fv(this.u_NormalMatrixLoc,	// GPU location of the uniform
+    false, 										// use matrix transpose instead?
+    this.NormalMatrix.elements);	// send data from Javascript.
+  }
 
 VBObox1.prototype.draw = function() {
 //=============================================================================
