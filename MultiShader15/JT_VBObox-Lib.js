@@ -69,33 +69,15 @@ function WorldBox() {
 }
 
 WorldBox.prototype.init = function () {
-  //=============================================================================
-  // Prepare the GPU to use all vertices, GLSL shaders, attributes, & uniforms 
-  // kept in this VBObox. (This function usually called only once, within main()).
-  // Specifically:
-  // a) Create, compile, link our GLSL vertex- and fragment-shaders to form an 
-  //  executable 'program' stored and ready to use inside the GPU.  
-  // b) create a new VBO object in GPU memory and fill it by transferring in all
-  //  the vertex data held in our Float32array member 'VBOcontents'. 
-  // c) Find & save the GPU location of all our shaders' attribute-variables and 
-  //  uniform-variables (needed by switchToMe(), adjust(), draw(), reload(), etc.)
-  // -------------------
-  // CAREFUL!  before you can draw pictures using this VBObox contents, 
-  //  you must call this VBObox object's switchToMe() function too!
-  //--------------------
-  // a) Compile,link,upload shaders-----------------------------------------------
+
   this.shaderLoc = createProgram(gl, this.VERT_SRC, this.FRAG_SRC);
   if (!this.shaderLoc) {
     console.log(this.constructor.name +
       '.init() failed to create executable Shaders on the GPU. Bye!');
     return;
   }
-  // CUTE TRICK: let's print the NAME of this VBObox object: tells us which one!
-  //  else{console.log('You called: '+ this.constructor.name + '.init() fcn!');}
-
   gl.program = this.shaderLoc;		// (to match cuon-utils.js -- initShaders())
 
-  // b) Create VBO on GPU, fill it------------------------------------------------
   this.vboLoc = gl.createBuffer();
   if (!this.vboLoc) {
     console.log(this.constructor.name +
@@ -107,7 +89,7 @@ WorldBox.prototype.init = function () {
     this.vboLoc);				  // the ID# the GPU uses for this buffer.
 
   gl.bufferData(gl.ARRAY_BUFFER, 			  // GLenum target(same as 'bindBuffer()')
-    this.vboContents, 		// JavaScript Float32Array
+  this.vboContents, 		// JavaScript Float32Array
     gl.STATIC_DRAW);			// Usage hint.
 
   this.a_PosLoc = gl.getAttribLocation(this.shaderLoc, 'a_Pos0');
@@ -368,14 +350,6 @@ function VBObox1() {
   this.u_modelMatLoc
   this.u_normalMatLoc;
   this.u_lightModeLoc;
-  this.u_KaLoc;
-  this.u_KdLoc;
-  this.u_KsLoc;
-  this.u_shininessValLoc;
-  this.u_ambientColorLoc;
-  this.u_diffuseColorLoc;
-  this.u_specularColorLoc;
-  this.u_lightPosLoc;
   this.u_eyePosWorldLoc;
 
   this.ModelMatrix = new Matrix4()
@@ -398,12 +372,9 @@ VBObox1.prototype.init = function () {
       '.init() failed to create executable Shaders on the GPU. Bye!');
     return;
   }
-  // CUTE TRICK: let's print the NAME of this VBObox object: tells us which one!
-  //  else{console.log('You called: '+ this.constructor.name + '.init() fcn!');}
-
+  
   gl.program = this.shaderLoc;		// (to match cuon-utils.js -- initShaders())
 
-  // b) Create VBO on GPU, fill it------------------------------------------------
   this.vboLoc = gl.createBuffer();
   if (!this.vboLoc) {
     console.log(this.constructor.name +
@@ -415,10 +386,8 @@ VBObox1.prototype.init = function () {
     this.vboLoc);				  // the ID# the GPU uses for this buffer.
 
   gl.bufferData(gl.ARRAY_BUFFER, 			  // GLenum target(same as 'bindBuffer()')
-    this.vboContents, 		// JavaScript Float32Array
+  this.vboContents, 		// JavaScript Float32Array
     gl.STATIC_DRAW);			// Usage hint.  
-
-
 
   this.a_positionLoc = gl.getAttribLocation(this.shaderLoc, 'a_position');
   this.a_normalLoc = gl.getAttribLocation(this.shaderLoc, 'a_normal');
@@ -426,14 +395,6 @@ VBObox1.prototype.init = function () {
   this.u_modelMatLoc = gl.getUniformLocation(this.shaderLoc, 'u_modelMat');
   this.u_normalMatLoc = gl.getUniformLocation(this.shaderLoc, 'u_normalMat');
   this.u_lightModeLoc = gl.getUniformLocation(this.shaderLoc, 'u_lightMode');
-  this.u_KaLoc = gl.getUniformLocation(this.shaderLoc, 'u_Ka');
-  this.u_KdLoc = gl.getUniformLocation(this.shaderLoc, 'u_Kd');
-  this.u_KsLoc = gl.getUniformLocation(this.shaderLoc, 'u_Ks');
-  this.u_shininessValLoc = gl.getUniformLocation(this.shaderLoc, 'u_shininessVal');
-  this.u_ambientColorLoc = gl.getUniformLocation(this.shaderLoc, 'u_ambientColor');
-  this.u_diffuseColorLoc = gl.getUniformLocation(this.shaderLoc, 'u_diffuseColor');
-  this.u_specularColorLoc = gl.getUniformLocation(this.shaderLoc, 'u_specularColor');
-  this.u_lightPosLoc = gl.getUniformLocation(this.shaderLoc, 'u_lightPos');
   this.u_eyePosWorldLoc = gl.getUniformLocation(this.shaderLoc, 'u_eyePosWorld');
 
   if (
@@ -443,32 +404,8 @@ VBObox1.prototype.init = function () {
     !this.u_modelMatLoc ||
     !this.u_normalMatLoc ||
     !this.u_lightModeLoc ||
-    !this.u_KaLoc ||
-    !this.u_KdLoc ||
-    !this.u_KsLoc ||
-    !this.u_shininessValLoc ||
-    !this.u_ambientColorLoc ||
-    !this.u_diffuseColorLoc ||
-    !this.u_specularColorLoc ||
-    !this.u_lightPosLoc ||
     !this.u_eyePosWorldLoc
   ) {
-    console.log(
-      this.a_positionLoc + ' ' +
-      this.a_normalLoc + ' ' +
-      !this.u_pvMatLoc + ' ' +
-      !this.u_modelMatLoc + ' ' +
-      !this.u_normalMatLoc + ' ' +
-      !this.u_lightModeLoc + ' ' +
-      !this.u_KaLoc + ' ' +
-      !this.u_KdLoc + ' ' +
-      !this.u_KsLoc + ' ' +
-      !this.u_shininessValLoc + ' ' +
-      !this.u_ambientColorLoc + ' ' +
-      !this.u_diffuseColorLoc + ' ' +
-      !this.u_specularColorLoc + ' ' +
-      !this.u_lightPosLoc
-    );
     console.log('Failed to get the storage location');
     //return;
   }
@@ -493,12 +430,6 @@ VBObox1.prototype.init = function () {
 		console.log('Failed to get GPUs Reflectance storage locations');
 		return;
 	}
-
-
-  this.lamp0.I_pos.elements.set( [6.0, 5.0, 5.0]);
-  this.lamp0.I_ambi.elements.set([0.4, 0.4, 0.4]);
-  this.lamp0.I_diff.elements.set([1.0, 1.0, 1.0]);
-  this.lamp0.I_spec.elements.set([1.0, 1.0, 1.0]);
 
 }
 
@@ -547,18 +478,13 @@ VBObox1.prototype.adjust = function () {
       '.adjust() call you needed to call this.switchToMe()!!');
   }
 
-  //  gl.uniform3f(this.u_LightColorLoc, 0.8, 0.8, 0.8);
-  // Set the light direction (in the world coordinate)
   gl.uniform1i(this.u_lightModeLoc, 0)
-  gl.uniform1f(this.u_KaLoc, 1.0)
-  gl.uniform1f(this.u_KdLoc, 1.0)
-  gl.uniform1f(this.u_KsLoc, 1.0)
-  gl.uniform1f(this.u_shininessValLoc, 55.0)
-  gl.uniform3f(this.u_ambientColorLoc, 0.2, 0.2, 0.2);
-  gl.uniform3f(this.u_diffuseColorLoc, 0.8, 0.2, 0.2);
-  gl.uniform3f(this.u_specularColorLoc, 0.8, 0.8, 0.8);
-  gl.uniform3f(this.u_lightPosLoc, 2.0, 1.0, 1.0);
   gl.uniform3f(this.u_eyePosWorldLoc, g_eye_point_v[0], g_eye_point_v[1], g_eye_point_v[2]);
+  
+  this.lamp0.I_pos.elements.set( [6.0, 5.0, 5.0]);
+  this.lamp0.I_ambi.elements.set([0.4, 0.4, 0.4]);
+  this.lamp0.I_diff.elements.set([1.0, 1.0, 1.0]);
+  this.lamp0.I_spec.elements.set([1.0, 1.0, 1.0]);
 
 
   gl.uniform3fv(this.lamp0.u_pos,  this.lamp0.I_pos.elements.slice(0,3));
@@ -803,14 +729,6 @@ function VBObox2() {
   this.u_modelMatLoc
   this.u_normalMatLoc;
   this.u_lightModeLoc;
-  this.u_KaLoc;
-  this.u_KdLoc;
-  this.u_KsLoc;
-  this.u_shininessValLoc;
-  this.u_ambientColorLoc;
-  this.u_diffuseColorLoc;
-  this.u_specularColorLoc;
-  this.u_lightPosLoc;
   this.u_eyePosWorldLoc;
 
   this.ModelMatrix = new Matrix4()
@@ -851,7 +769,7 @@ VBObox2.prototype.init = function () {
     this.vboLoc);				  // the ID# the GPU uses for this buffer.
 
   gl.bufferData(gl.ARRAY_BUFFER, 			  // GLenum target(same as 'bindBuffer()')
-    this.vboContents, 		// JavaScript Float32Array
+  this.vboContents, 		// JavaScript Float32Array
     gl.STATIC_DRAW);			// Usage hint.  
 
 
@@ -871,32 +789,8 @@ VBObox2.prototype.init = function () {
     !this.u_modelMatLoc ||
     !this.u_normalMatLoc ||
     !this.u_lightModeLoc ||
-    !this.u_KaLoc ||
-    !this.u_KdLoc ||
-    !this.u_KsLoc ||
-    !this.u_shininessValLoc ||
-    !this.u_ambientColorLoc ||
-    !this.u_diffuseColorLoc ||
-    !this.u_specularColorLoc ||
-    !this.u_lightPosLoc ||
     !this.u_eyePosWorldLoc
   ) {
-    console.log(
-      this.a_positionLoc + ' ' +
-      this.a_normalLoc + ' ' +
-      !this.u_pvMatLoc + ' ' +
-      !this.u_modelMatLoc + ' ' +
-      !this.u_normalMatLoc + ' ' +
-      !this.u_lightModeLoc + ' ' +
-      !this.u_KaLoc + ' ' +
-      !this.u_KdLoc + ' ' +
-      !this.u_KsLoc + ' ' +
-      !this.u_shininessValLoc + ' ' +
-      !this.u_ambientColorLoc + ' ' +
-      !this.u_diffuseColorLoc + ' ' +
-      !this.u_specularColorLoc + ' ' +
-      !this.u_lightPosLoc
-    );
     console.log('Failed to get the storage location');
     //return;
   }
@@ -921,12 +815,6 @@ VBObox2.prototype.init = function () {
 		console.log('Failed to get GPUs Reflectance storage locations');
 		return;
 	}
-
-
-  this.lamp0.I_pos.elements.set( [6.0, 5.0, 5.0]);
-  this.lamp0.I_ambi.elements.set([0.4, 0.4, 0.4]);
-  this.lamp0.I_diff.elements.set([1.0, 1.0, 1.0]);
-  this.lamp0.I_spec.elements.set([1.0, 1.0, 1.0]);
 }
 
 VBObox2.prototype.switchToMe = function () {
@@ -975,16 +863,12 @@ VBObox2.prototype.adjust = function () {
   //  gl.uniform3f(this.u_LightColorLoc, 0.8, 0.8, 0.8);
   // Set the light direction (in the world coordinate)
   gl.uniform1i(this.u_lightModeLoc, 0)
-  gl.uniform1f(this.u_KaLoc, 1.0)
-  gl.uniform1f(this.u_KdLoc, 1.0)
-  gl.uniform1f(this.u_KsLoc, 1.0)
-  gl.uniform1f(this.u_shininessValLoc, 55.0)
-  gl.uniform3f(this.u_ambientColorLoc, 0.2, 0.2, 0.2);
-  gl.uniform3f(this.u_diffuseColorLoc, 0.8, 0.2, 0.2);
-  gl.uniform3f(this.u_specularColorLoc, 0.8, 0.8, 0.8);
-  gl.uniform3f(this.u_lightPosLoc, 2.0, 1.0, 1.0);
   gl.uniform3f(this.u_eyePosWorldLoc, g_eye_point_v[0], g_eye_point_v[1], g_eye_point_v[2]);
 
+  this.lamp0.I_pos.elements.set( [6.0, 5.0, 5.0]);
+  this.lamp0.I_ambi.elements.set([0.4, 0.4, 0.4]);
+  this.lamp0.I_diff.elements.set([1.0, 1.0, 1.0]);
+  this.lamp0.I_spec.elements.set([1.0, 1.0, 1.0]);
 
   gl.uniform3fv(this.lamp0.u_pos,  this.lamp0.I_pos.elements.slice(0,3));
   gl.uniform3fv(this.lamp0.u_ambi, this.lamp0.I_ambi.elements);		// ambient
