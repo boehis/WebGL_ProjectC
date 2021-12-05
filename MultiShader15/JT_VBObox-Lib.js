@@ -264,34 +264,28 @@ function VBObox1() {
 
     'void main(){ \n' +
 
-    '  vec3 normal2 = normalize(vec3(u_normalMat * a_normal));\n' +
-     // Calculate world coordinate of vertex
     '  vec4 vertexPosition = u_modelMat * a_position;\n' +
-      // Calculate the light direction and make it 1.0 in length
-    '  vec3 lightDirection = normalize(u_lightPos - vec3(vertexPosition));\n' +
-      // The dot product of the light direction and the normal
-    '  float nDotL = max(dot(lightDirection, vec3(normal2)), 0.0);\n' +
-
-    '  vec3 diffuse = u_diffuseColor * nDotL;\n' +
-    // Calculate the color due to ambient reflection
-
-     '  gl_Position = u_pvMat * vertexPosition; \n' +
-     '  vec3 eyeDirection = normalize(u_eyePosWorld - vertexPosition.xyz); \n' +
-	
-    '  vec3 N = normal2; \n' +
-    '  vec3 L = lightDirection; \n' +
-    '  float lambertian = nDotL; \n' +
+    '  vec4 normalPosition = u_normalMat * a_normal;\n' +
+    
+    '  vec3 lightDirection = normalize(u_lightPos - vertexPosition.xyz);\n' +
+    '  vec3 eyeDirection = normalize(u_eyePosWorld - vertexPosition.xyz); \n' +
+    
+    '  vec3 N = normalize(normalPosition.xyz);\n' + 
+    '  float nDotL = max(dot(lightDirection, N), 0.0);\n' +
+    
     '  float specular = 0.0; \n' +
-    '  if(lambertian > 0.0) { \n' +
-    '    vec3 R = reflect(L, N);      // Reflected light vector \n' +
-    '    vec3 V = normalize(-eyeDirection); // Vector to viewer \n' +
-    '    float specAngle = max(dot(R, V), 0.0); \n' +
+    '  if(nDotL > 0.0) { \n' +
+    '    vec3 R = reflect(lightDirection, N);      // Reflected light vector \n' +
+    '    vec3 V = normalize(eyeDirection); // Vector to viewer \n' +
+    '    float specAngle = max(dot(-R, V), 0.0); \n' +
     '    specular = pow(specAngle, u_shininessVal); \n' +
     '  } \n' +
+    
     '  v_color = vec4(u_Ka * u_ambientColor + \n' +
     '               u_Kd * nDotL * u_diffuseColor  + \n' +
-'                   u_Ks * specular * u_specularColor, 1.0); \n' +
-
+    '                   u_Ks * specular * u_specularColor, 1.0); \n' +
+    '  gl_Position = u_pvMat * vertexPosition; \n' +
+    
      '  if(u_lightMode == 2) v_color = vec4(u_Ka * u_ambientColor, 1.0); \n' +
     // '  if(mode == 3) color = vec4(Kd * lambertian * diffuseColor, 1.0); \n' +
     // '  if(mode == 4) color = vec4(Ks * specular * specularColor, 1.0); \n' +
