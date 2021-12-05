@@ -360,20 +360,20 @@ function VBObox1() {
   // set by compile/link of VERT_SRC and FRAG_SRC.
   //------Attribute locations in our shaders:
 
-  this.positionLoc;
-  this.normalLoc;
-  this.projectionLoc
-  this.modelviewLoc
-  this.normalMatLoc;
-  this.modeLoc;
-  this.KaLoc;
-  this.KdLoc;
-  this.KsLoc;
-  this.shininessValLoc;
-  this.ambientColorLoc;
-  this.diffuseColorLoc;
-  this.specularColorLoc;
-  this.lightPosLoc;
+  this.a_positionLoc;
+  this.a_normalLoc;
+  this.u_pvMatLoc
+  this.u_modelMatLoc
+  this.u_normalMatLoc;
+  this.u_lightModeLoc;
+  this.u_KaLoc;
+  this.u_KdLoc;
+  this.u_KsLoc;
+  this.u_shininessValLoc;
+  this.u_ambientColorLoc;
+  this.u_diffuseColorLoc;
+  this.u_specularColorLoc;
+  this.u_lightPosLoc;
   this.u_eyePosWorldLoc;
 
   this.ModelMatrix = new Matrix4()
@@ -414,54 +414,54 @@ VBObox1.prototype.init = function () {
 
 
 
-  this.positionLoc = gl.getAttribLocation(this.shaderLoc, 'a_position');
-  this.normalLoc = gl.getAttribLocation(this.shaderLoc, 'a_normal');
-  this.projectionLoc = gl.getUniformLocation(this.shaderLoc, 'u_pvMat');
-  this.modelviewLoc = gl.getUniformLocation(this.shaderLoc, 'u_modelMat');
-  this.normalMatLoc = gl.getUniformLocation(this.shaderLoc, 'u_normalMat');
-  this.modeLoc = gl.getUniformLocation(this.shaderLoc, 'u_lightMode');
-  this.KaLoc = gl.getUniformLocation(this.shaderLoc, 'u_Ka');
-  this.KdLoc = gl.getUniformLocation(this.shaderLoc, 'u_Kd');
-  this.KsLoc = gl.getUniformLocation(this.shaderLoc, 'u_Ks');
-  this.shininessValLoc = gl.getUniformLocation(this.shaderLoc, 'u_shininessVal');
-  this.ambientColorLoc = gl.getUniformLocation(this.shaderLoc, 'u_ambientColor');
-  this.diffuseColorLoc = gl.getUniformLocation(this.shaderLoc, 'u_diffuseColor');
-  this.specularColorLoc = gl.getUniformLocation(this.shaderLoc, 'u_specularColor');
-  this.lightPosLoc = gl.getUniformLocation(this.shaderLoc, 'u_lightPos');
+  this.a_positionLoc = gl.getAttribLocation(this.shaderLoc, 'a_position');
+  this.a_normalLoc = gl.getAttribLocation(this.shaderLoc, 'a_normal');
+  this.u_pvMatLoc = gl.getUniformLocation(this.shaderLoc, 'u_pvMat');
+  this.u_modelMatLoc = gl.getUniformLocation(this.shaderLoc, 'u_modelMat');
+  this.u_normalMatLoc = gl.getUniformLocation(this.shaderLoc, 'u_normalMat');
+  this.u_lightModeLoc = gl.getUniformLocation(this.shaderLoc, 'u_lightMode');
+  this.u_KaLoc = gl.getUniformLocation(this.shaderLoc, 'u_Ka');
+  this.u_KdLoc = gl.getUniformLocation(this.shaderLoc, 'u_Kd');
+  this.u_KsLoc = gl.getUniformLocation(this.shaderLoc, 'u_Ks');
+  this.u_shininessValLoc = gl.getUniformLocation(this.shaderLoc, 'u_shininessVal');
+  this.u_ambientColorLoc = gl.getUniformLocation(this.shaderLoc, 'u_ambientColor');
+  this.u_diffuseColorLoc = gl.getUniformLocation(this.shaderLoc, 'u_diffuseColor');
+  this.u_specularColorLoc = gl.getUniformLocation(this.shaderLoc, 'u_specularColor');
+  this.u_lightPosLoc = gl.getUniformLocation(this.shaderLoc, 'u_lightPos');
   this.u_eyePosWorldLoc = gl.getUniformLocation(this.shaderLoc, 'u_eyePosWorld');
 
   if (
-    this.positionLoc < 0 ||
-    this.normalLoc < 0 ||
-    !this.projectionLoc ||
-    !this.modelviewLoc ||
-    !this.normalMatLoc ||
-    !this.modeLoc ||
-    !this.KaLoc ||
-    !this.KdLoc ||
-    !this.KsLoc ||
-    !this.shininessValLoc ||
-    !this.ambientColorLoc ||
-    !this.diffuseColorLoc ||
-    !this.specularColorLoc ||
-    !this.lightPosLoc ||
+    this.a_positionLoc < 0 ||
+    this.a_normalLoc < 0 ||
+    !this.u_pvMatLoc ||
+    !this.u_modelMatLoc ||
+    !this.u_normalMatLoc ||
+    !this.u_lightModeLoc ||
+    !this.u_KaLoc ||
+    !this.u_KdLoc ||
+    !this.u_KsLoc ||
+    !this.u_shininessValLoc ||
+    !this.u_ambientColorLoc ||
+    !this.u_diffuseColorLoc ||
+    !this.u_specularColorLoc ||
+    !this.u_lightPosLoc ||
     !this.u_eyePosWorldLoc
   ) {
     console.log(
-      this.positionLoc + ' ' +
-      this.normalLoc + ' ' +
-      !this.projectionLoc + ' ' +
-      !this.modelviewLoc + ' ' +
-      !this.normalMatLoc + ' ' +
-      !this.modeLoc + ' ' +
-      !this.KaLoc + ' ' +
-      !this.KdLoc + ' ' +
-      !this.KsLoc + ' ' +
-      !this.shininessValLoc + ' ' +
-      !this.ambientColorLoc + ' ' +
-      !this.diffuseColorLoc + ' ' +
-      !this.specularColorLoc + ' ' +
-      !this.lightPosLoc
+      this.a_positionLoc + ' ' +
+      this.a_normalLoc + ' ' +
+      !this.u_pvMatLoc + ' ' +
+      !this.u_modelMatLoc + ' ' +
+      !this.u_normalMatLoc + ' ' +
+      !this.u_lightModeLoc + ' ' +
+      !this.u_KaLoc + ' ' +
+      !this.u_KdLoc + ' ' +
+      !this.u_KsLoc + ' ' +
+      !this.u_shininessValLoc + ' ' +
+      !this.u_ambientColorLoc + ' ' +
+      !this.u_diffuseColorLoc + ' ' +
+      !this.u_specularColorLoc + ' ' +
+      !this.u_lightPosLoc
     );
     console.log('Failed to get the storage location');
     return;
@@ -474,15 +474,15 @@ VBObox1.prototype.switchToMe = function () {
   gl.bindBuffer(gl.ARRAY_BUFFER,	    // GLenum 'target' for this GPU buffer 
     this.vboLoc);			// the ID# the GPU uses for our VBO.
 
-  gl.vertexAttribPointer(this.positionLoc, this.vboFcount_a_Pos1,
+  gl.vertexAttribPointer(this.a_positionLoc, this.vboFcount_a_Pos1,
     gl.FLOAT, false,
     this.vboStride, this.vboOffset_a_Pos1);
-  gl.vertexAttribPointer(this.normalLoc, this.vboFcount_a_Pos1,
+  gl.vertexAttribPointer(this.a_normalLoc, this.vboFcount_a_Pos1,
     gl.FLOAT, false,
     this.vboStride, this.vboOffset_a_Pos1);
 
-  gl.enableVertexAttribArray(this.positionLoc);
-  gl.enableVertexAttribArray(this.normalLoc);
+  gl.enableVertexAttribArray(this.a_positionLoc);
+  gl.enableVertexAttribArray(this.a_normalLoc);
 }
 
 VBObox1.prototype.isReady = function () {
@@ -515,30 +515,29 @@ VBObox1.prototype.adjust = function () {
 
   //  gl.uniform3f(this.u_LightColorLoc, 0.8, 0.8, 0.8);
   // Set the light direction (in the world coordinate)
-  gl.uniform1i(this.modeLoc, 1)
-  gl.uniform1f(this.KaLoc, 1.0)
-  gl.uniform1f(this.KdLoc, 1.0)
-  gl.uniform1f(this.KsLoc, 1.0)
-  gl.uniform1f(this.shininessValLoc, 55.0)
-  gl.uniform3f(this.ambientColorLoc, 0.2, 0.2, 0.2);
-  gl.uniform3f(this.diffuseColorLoc, 0.8, 0.2, 0.2);
-  gl.uniform3f(this.specularColorLoc, 0.8, 0.8, 0.8);
-  gl.uniform3f(this.lightPosLoc, 2.0, 1.0, 1.0);
+  gl.uniform1i(this.u_lightModeLoc, 1)
+  gl.uniform1f(this.u_KaLoc, 1.0)
+  gl.uniform1f(this.u_KdLoc, 1.0)
+  gl.uniform1f(this.u_KsLoc, 1.0)
+  gl.uniform1f(this.u_shininessValLoc, 55.0)
+  gl.uniform3f(this.u_ambientColorLoc, 0.2, 0.2, 0.2);
+  gl.uniform3f(this.u_diffuseColorLoc, 0.8, 0.2, 0.2);
+  gl.uniform3f(this.u_specularColorLoc, 0.8, 0.8, 0.8);
+  gl.uniform3f(this.u_lightPosLoc, 2.0, 1.0, 1.0);
   gl.uniform3f(this.u_eyePosWorldLoc, g_eye_point_v[0], g_eye_point_v[1], g_eye_point_v[2]);
 
 
   this.ModelMatrix.setRotate(g_angleNow0, 0, 0, 1);
-  //this.ModelMatrix.translate(0.35, -0.15, 0.1);
-  gl.uniformMatrix4fv(this.modelviewLoc, false, this.ModelMatrix.elements)
+  gl.uniformMatrix4fv(this.u_modelMatLoc, false, this.ModelMatrix.elements)
 
   
-  var mvpMat = new Matrix4()
-  mvpMat.set(g_projMatrix).multiply(g_viewMatrix)
-  gl.uniformMatrix4fv(this.projectionLoc, false, mvpMat.elements);
+  var pvMat = new Matrix4()
+  pvMat.set(g_projMatrix).multiply(g_viewMatrix)
+  gl.uniformMatrix4fv(this.u_pvMatLoc, false, pvMat.elements);
 
   this.normalMat.setInverseOf(this.ModelMatrix)
   this.normalMat.transpose()
-  gl.uniformMatrix4fv(this.normalMatLoc, false, this.normalMat.elements);
+  gl.uniformMatrix4fv(this.u_normalMatLoc, false, this.normalMat.elements);
 
 }
 
