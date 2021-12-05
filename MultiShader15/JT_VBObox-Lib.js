@@ -275,20 +275,22 @@ function VBObox1() {
     
     '  float specular = 0.0; \n' +
     '  if(nDotL > 0.0) { \n' +
-    '    vec3 R = reflect(lightDirection, N);      // Reflected light vector \n' +
-    '    vec3 V = normalize(eyeDirection); // Vector to viewer \n' +
-    '    float specAngle = max(dot(-R, V), 0.0); \n' +
-    '    specular = pow(specAngle, u_shininessVal); \n' +
+    '    if(u_lightMode == 0) { \n' +
+    '      vec3 H = normalize(lightDirection + eyeDirection); \n' +
+  	'      float nDotH = max(dot(H, N), 0.0); \n' +
+    '      specular = pow(nDotH, u_shininessVal); \n' +
+    '    } else { \n' +
+    '      vec3 R = reflect(lightDirection, N);      // Reflected light vector \n' +
+    '      vec3 V = normalize(eyeDirection); // Vector to viewer \n' +
+    '      float specAngle = max(dot(-R, V), 0.0); \n' +
+    '      specular = pow(specAngle, u_shininessVal); \n' +
+    '    } \n' +
     '  } \n' +
-    
+
     '  v_color = vec4(u_Ka * u_ambientColor + \n' +
     '               u_Kd * nDotL * u_diffuseColor  + \n' +
     '                   u_Ks * specular * u_specularColor, 1.0); \n' +
     '  gl_Position = u_pvMat * vertexPosition; \n' +
-    
-     '  if(u_lightMode == 2) v_color = vec4(u_Ka * u_ambientColor, 1.0); \n' +
-    // '  if(mode == 3) color = vec4(Kd * lambertian * diffuseColor, 1.0); \n' +
-    // '  if(mode == 4) color = vec4(Ks * specular * specularColor, 1.0); \n' +
     '} \n'
 
   // SHADED, sphere-like dots:
@@ -509,7 +511,7 @@ VBObox1.prototype.adjust = function () {
 
   //  gl.uniform3f(this.u_LightColorLoc, 0.8, 0.8, 0.8);
   // Set the light direction (in the world coordinate)
-  gl.uniform1i(this.u_lightModeLoc, 1)
+  gl.uniform1i(this.u_lightModeLoc, 0)
   gl.uniform1f(this.u_KaLoc, 1.0)
   gl.uniform1f(this.u_KdLoc, 1.0)
   gl.uniform1f(this.u_KsLoc, 1.0)
