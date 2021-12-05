@@ -245,6 +245,24 @@ function VBObox1() {
   this.VERT_SRC =	//--------------------- VERTEX SHADER source code 
     'precision highp float;\n' +				// req'd in OpenGL ES if we use 'float'
     //
+
+    'struct LampT {\n' +		// Describes one point-like Phong light source
+    '		vec3 pos;\n' +			// (x,y,z,w); w==1.0 for local light at x,y,z position
+                            //		   w==0.0 for distant light from x,y,z direction 
+    ' 	vec3 ambi;\n' +			// Ia ==  ambient light source strength (r,g,b)
+    ' 	vec3 diff;\n' +			// Id ==  diffuse light source strength (r,g,b)
+    '		vec3 spec;\n' +			// Is == specular light source strength (r,g,b)
+    '}; \n' +
+
+    'struct MatlT {\n' +		// Describes one Phong material by its reflectances:
+    '		vec3 emit;\n' +			// Ke: emissive -- surface 'glow' amount (r,g,b);
+    '		vec3 ambi;\n' +			// Ka: ambient reflectance (r,g,b)
+    '		vec3 diff;\n' +			// Kd: diffuse reflectance (r,g,b)
+    '		vec3 spec;\n' + 		// Ks: specular reflectance (r,g,b)
+    '		int shiny;\n' +			// Kshiny: specular exponent (integer >= 1; typ. <200)
+    '		};\n' +
+
+
     'attribute vec4 a_position; \n' +
     'attribute vec4 a_normal; \n' +
 
@@ -515,7 +533,7 @@ VBObox1.prototype.adjust = function () {
   gl.uniform3f(this.u_eyePosWorldLoc, g_eye_point_v[0], g_eye_point_v[1], g_eye_point_v[2]);
 
 
-  this.ModelMatrix.setTranslate( -3, -3, 0);
+  this.ModelMatrix.setTranslate( 0,0, 0);
   this.ModelMatrix.rotate(g_angleNow0, 0, 0, 1);
   gl.uniformMatrix4fv(this.u_modelMatLoc, false, this.ModelMatrix.elements)
 
@@ -607,15 +625,6 @@ function VBObox2() {
   
     'uniform mat4 u_pvMat, u_modelMat, u_normalMat; \n' +
     'uniform int u_lightMode;    \n' +
-    //'uniform float u_Ka;    \n' +
-    //'uniform float u_Kd;    \n' +
-    //'uniform float u_Ks;    \n' +
-    // 'uniform float u_shininessVal;  \n' +
-    // 'uniform vec3 u_ambientColor; \n' +
-    // 'uniform vec3 u_diffuseColor; \n' +
-    // 'uniform vec3 u_specularColor; \n' +
-    // 'uniform vec3 u_lightPos;  \n' +
-    //'uniform vec3 u_eyePosWorld; \n' + 	// Camera/eye location in world coords.
     
     'varying vec4 v_color;  \n' +
     'varying vec3 v_Kd;  \n' +
@@ -657,63 +666,29 @@ function VBObox2() {
 	'uniform MatlT u_MatlSet[1];\n' +		// Array of all materials.
 	
   'uniform vec3 u_eyePosWorld; \n' + 	// Camera/eye location in world coords.
-  
-  // first light source: (YOU write a second one...)
-  'uniform vec3 u_lightPos;\n' + 			// Phong Illum: position
-  'uniform vec3 u_ambientColor;\n' +   		// Phong Illum: ambient
-  'uniform vec3 u_diffuseColor;\n' +     // Phong Illum: diffuse
-	'uniform vec3 u_specularColor;\n' +			// Phong Illum: specular
-	
-	// first material definition: you write 2nd, 3rd, etc.
-  //'uniform vec3 u_Ke;\n' +						// Phong Reflectance: emissive
-  'uniform vec3 u_Ka;\n' +						// Phong Reflectance: ambient
-	// Phong Reflectance: diffuse? -- use v_Kd instead for per-pixel value
-  'uniform vec3 u_Ks;\n' +						// Phong Reflectance: specular
-//  'uniform int u_Kshiny;\n' +				// Phong Reflectance: 1 < shiny < 200
-//	
-  
+
   'varying vec3 v_Normal;\n' +				// Find 3D surface normal at each pix
   'varying vec4 v_Position;\n' +			// pixel's 3D pos too -- in 'world' coords
   'varying vec3 v_Kd;	\n' +						// Find diffuse reflectance K_d per pix
-  													// Ambient? Emissive? Specular? almost
-  													// NEVER change per-vertex: I use'uniform'
 
   'varying vec4 v_color;\n' +
   'void main() {\n' +
 	'  vec3 normal = normalize(v_Normal); \n' +
-//	'  vec3 normal = v_Normal; \n' +
-     	// Find the unit-length light dir vector 'L' (surface pt --> light):
 	'  vec3 lightDirection = normalize(u_LampSet[0].pos - v_Position.xyz);\n' +
-			// Find the unit-length eye-direction vector 'V' (surface pt --> camera)
-  '  vec3 eyeDirection = normalize(u_eyePosWorld - v_Position.xyz); \n' +
-     	// The dot product of (unit-length) light direction and the normal vector
-     	// (use max() to discard any negatives from lights below the surface) 
-     	// (look in GLSL manual: what other functions would help?)
-     	// gives us the cosine-falloff factor needed for the diffuse lighting term:
+	'  vec3 eyeDirection = normalize(u_eyePosWorld - v_Position.xyz); \n' +
+
 	'  float nDotL = max(dot(lightDirection, normal), 0.0); \n' +
-  	 	// The Blinn-Phong lighting model computes the specular term faster 
-  	 	// because it replaces the (V*R)^shiny weighting with (H*N)^shiny,
-  	 	// where 'halfway' vector H has a direction half-way between L and V
-  	 	// H = norm(norm(V) + norm(L)).  Note L & V already normalized above.
-  	 	// (see http://en.wikipedia.org/wiki/Blinn-Phong_shading_model)
+  
 	'  vec3 H = normalize(lightDirection + eyeDirection); \n' +
 	'  float nDotH = max(dot(H, normal), 0.0); \n' +
-			// (use max() to discard any negatives from lights below the surface)
-			// Apply the 'shininess' exponent K_e:
-			// Try it two different ways:		The 'new hotness': pow() fcn in GLSL.
-			// CAREFUL!  pow() won't accept integer exponents! Convert K_shiny!  
+
 	'  float e64 = pow(nDotH, float(u_MatlSet[0].shiny));\n' +
- 	// Calculate the final color from diffuse reflection and ambient reflection
-//  '	 vec3 emissive = u_Ke;' +
+
   '	 vec3 emissive = 										u_MatlSet[0].emit;' +
   '  vec3 ambient = u_LampSet[0].ambi * u_MatlSet[0].ambi;\n' +
   '  vec3 diffuse = u_LampSet[0].diff * v_Kd * nDotL;\n' +
   '	 vec3 speculr = u_LampSet[0].spec * u_MatlSet[0].spec * e64;\n' +
   '  gl_FragColor = vec4(emissive + ambient + diffuse + speculr , 1.0);\n' +
-
-
-
-  //'  gl_FragColor = vec4(u_LampSet[0].ambi, 1.0); \n' +
   '}\n';
 
 /*
@@ -838,14 +813,6 @@ VBObox2.prototype.init = function () {
   this.u_modelMatLoc = gl.getUniformLocation(this.shaderLoc, 'u_modelMat');
   this.u_normalMatLoc = gl.getUniformLocation(this.shaderLoc, 'u_normalMat');
   this.u_lightModeLoc = gl.getUniformLocation(this.shaderLoc, 'u_lightMode');
-  this.u_KaLoc = gl.getUniformLocation(this.shaderLoc, 'u_Ka');
-  this.u_KdLoc = gl.getUniformLocation(this.shaderLoc, 'u_Kd');
-  this.u_KsLoc = gl.getUniformLocation(this.shaderLoc, 'u_Ks');
-  this.u_shininessValLoc = gl.getUniformLocation(this.shaderLoc, 'u_shininessVal');
-  this.u_ambientColorLoc = gl.getUniformLocation(this.shaderLoc, 'u_ambientColor');
-  this.u_diffuseColorLoc = gl.getUniformLocation(this.shaderLoc, 'u_diffuseColor');
-  this.u_specularColorLoc = gl.getUniformLocation(this.shaderLoc, 'u_specularColor');
-  this.u_lightPosLoc = gl.getUniformLocation(this.shaderLoc, 'u_lightPos');
   this.u_eyePosWorldLoc = gl.getUniformLocation(this.shaderLoc, 'u_eyePosWorld');
 
   if (
