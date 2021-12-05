@@ -247,39 +247,37 @@ function VBObox1() {
     //
     'attribute vec4 a_position; \n' +
     'attribute vec4 a_normal; \n' +
-    'uniform mat4 projection, modelview, normalMat; \n' +
-    'varying vec3 normalInterp; \n' +
-    'varying vec3 vertPos; \n' +
-    'uniform int mode;    \n' +
-    'uniform float Ka;    \n' +
-    'uniform float Kd;    \n' +
-    'uniform float Ks;    \n' +
-    'uniform float shininessVal;  \n' +
-    'uniform vec3 ambientColor; \n' +
-    'uniform vec3 diffuseColor; \n' +
-    'uniform vec3 specularColor; \n' +
-    'uniform vec3 lightPos;  \n' +
+
+    'uniform mat4 u_pvMat, u_modelMat, u_normalMat; \n' +
+    'uniform int u_lightMode;    \n' +
+    'uniform float u_Ka;    \n' +
+    'uniform float u_Kd;    \n' +
+    'uniform float u_Ks;    \n' +
+    'uniform float u_shininessVal;  \n' +
+    'uniform vec3 u_ambientColor; \n' +
+    'uniform vec3 u_diffuseColor; \n' +
+    'uniform vec3 u_specularColor; \n' +
+    'uniform vec3 u_lightPos;  \n' +
     'uniform vec3 u_eyePosWorld; \n' + 	// Camera/eye location in world coords.
-    'varying vec4 color;  \n' +
+    
+    'varying vec4 v_color;  \n' +
 
     'void main(){ \n' +
 
-    '  vec3 normal2 = normalize(vec3(normalMat * a_normal));\n' +
+    '  vec3 normal2 = normalize(vec3(u_normalMat * a_normal));\n' +
      // Calculate world coordinate of vertex
-    '  vec4 vertexPosition = modelview * a_position;\n' +
+    '  vec4 vertexPosition = u_modelMat * a_position;\n' +
       // Calculate the light direction and make it 1.0 in length
-    '  vec3 lightDirection = normalize(lightPos - vec3(vertexPosition));\n' +
+    '  vec3 lightDirection = normalize(u_lightPos - vec3(vertexPosition));\n' +
       // The dot product of the light direction and the normal
     '  float nDotL = max(dot(lightDirection, vec3(normal2)), 0.0);\n' +
 
-    '  vec3 diffuse = diffuseColor * nDotL;\n' +
+    '  vec3 diffuse = u_diffuseColor * nDotL;\n' +
     // Calculate the color due to ambient reflection
 
-     '  gl_Position = projection * vertexPosition; \n' +
+     '  gl_Position = u_pvMat * vertexPosition; \n' +
      '  vec3 eyeDirection = normalize(u_eyePosWorld - vertexPosition.xyz); \n' +
 	
-
-    '  vertPos = vec3(vertexPosition); \n' +
     '  vec3 N = normal2; \n' +
     '  vec3 L = lightDirection; \n' +
     '  float lambertian = nDotL; \n' +
@@ -288,13 +286,13 @@ function VBObox1() {
     '    vec3 R = reflect(L, N);      // Reflected light vector \n' +
     '    vec3 V = normalize(-eyeDirection); // Vector to viewer \n' +
     '    float specAngle = max(dot(R, V), 0.0); \n' +
-    '    specular = pow(specAngle, shininessVal); \n' +
+    '    specular = pow(specAngle, u_shininessVal); \n' +
     '  } \n' +
-    '  color = vec4(Ka * ambientColor + \n' +
-    '               Kd * nDotL * diffuseColor  + \n' +
-'                   Ks * specular * specularColor, 1.0); \n' +
+    '  v_color = vec4(u_Ka * u_ambientColor + \n' +
+    '               u_Kd * nDotL * u_diffuseColor  + \n' +
+'                   u_Ks * specular * u_specularColor, 1.0); \n' +
 
-    // '  if(mode == 2) color = vec4(Ka * ambientColor, 1.0); \n' +
+     '  if(u_lightMode == 2) v_color = vec4(u_Ka * u_ambientColor, 1.0); \n' +
     // '  if(mode == 3) color = vec4(Kd * lambertian * diffuseColor, 1.0); \n' +
     // '  if(mode == 4) color = vec4(Ks * specular * specularColor, 1.0); \n' +
     '} \n'
@@ -302,9 +300,9 @@ function VBObox1() {
   // SHADED, sphere-like dots:
   this.FRAG_SRC = //---------------------- FRAGMENT SHADER source code 
     'precision mediump float;\n' +
-    'varying vec4 color;\n' +
+    'varying vec4 v_color;\n' +
     'void main() {\n' +
-    '  gl_FragColor = color; \n' +
+    '  gl_FragColor = v_color; \n' +
     '}\n';
 
   var c30 = Math.sqrt(0.75);					// == cos(30deg) == sqrt(3) / 2
@@ -418,18 +416,18 @@ VBObox1.prototype.init = function () {
 
   this.positionLoc = gl.getAttribLocation(this.shaderLoc, 'a_position');
   this.normalLoc = gl.getAttribLocation(this.shaderLoc, 'a_normal');
-  this.projectionLoc = gl.getUniformLocation(this.shaderLoc, 'projection');
-  this.modelviewLoc = gl.getUniformLocation(this.shaderLoc, 'modelview');
-  this.normalMatLoc = gl.getUniformLocation(this.shaderLoc, 'normalMat');
-  this.modeLoc = gl.getUniformLocation(this.shaderLoc, 'mode');
-  this.KaLoc = gl.getUniformLocation(this.shaderLoc, 'Ka');
-  this.KdLoc = gl.getUniformLocation(this.shaderLoc, 'Kd');
-  this.KsLoc = gl.getUniformLocation(this.shaderLoc, 'Ks');
-  this.shininessValLoc = gl.getUniformLocation(this.shaderLoc, 'shininessVal');
-  this.ambientColorLoc = gl.getUniformLocation(this.shaderLoc, 'ambientColor');
-  this.diffuseColorLoc = gl.getUniformLocation(this.shaderLoc, 'diffuseColor');
-  this.specularColorLoc = gl.getUniformLocation(this.shaderLoc, 'specularColor');
-  this.lightPosLoc = gl.getUniformLocation(this.shaderLoc, 'lightPos');
+  this.projectionLoc = gl.getUniformLocation(this.shaderLoc, 'u_pvMat');
+  this.modelviewLoc = gl.getUniformLocation(this.shaderLoc, 'u_modelMat');
+  this.normalMatLoc = gl.getUniformLocation(this.shaderLoc, 'u_normalMat');
+  this.modeLoc = gl.getUniformLocation(this.shaderLoc, 'u_lightMode');
+  this.KaLoc = gl.getUniformLocation(this.shaderLoc, 'u_Ka');
+  this.KdLoc = gl.getUniformLocation(this.shaderLoc, 'u_Kd');
+  this.KsLoc = gl.getUniformLocation(this.shaderLoc, 'u_Ks');
+  this.shininessValLoc = gl.getUniformLocation(this.shaderLoc, 'u_shininessVal');
+  this.ambientColorLoc = gl.getUniformLocation(this.shaderLoc, 'u_ambientColor');
+  this.diffuseColorLoc = gl.getUniformLocation(this.shaderLoc, 'u_diffuseColor');
+  this.specularColorLoc = gl.getUniformLocation(this.shaderLoc, 'u_specularColor');
+  this.lightPosLoc = gl.getUniformLocation(this.shaderLoc, 'u_lightPos');
   this.u_eyePosWorldLoc = gl.getUniformLocation(this.shaderLoc, 'u_eyePosWorld');
 
   if (
