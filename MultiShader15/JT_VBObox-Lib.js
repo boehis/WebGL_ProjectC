@@ -266,16 +266,13 @@ function VBObox1() {
     'attribute vec4 a_position; \n' +
     'attribute vec4 a_normal; \n' +
 
+    'uniform LampT u_LampSet[1];\n' +		// Array of all light sources.
+	  'uniform MatlT u_MatlSet[1];\n' +		// Array of all materials.
+	
+
     'uniform mat4 u_pvMat, u_modelMat, u_normalMat; \n' +
     'uniform int u_lightMode;    \n' +
-    'uniform float u_Ka;    \n' +
-    'uniform float u_Kd;    \n' +
-    'uniform float u_Ks;    \n' +
-    'uniform float u_shininessVal;  \n' +
-    'uniform vec3 u_ambientColor; \n' +
-    'uniform vec3 u_diffuseColor; \n' +
-    'uniform vec3 u_specularColor; \n' +
-    'uniform vec3 u_lightPos;  \n' +
+    
     'uniform vec3 u_eyePosWorld; \n' + 	// Camera/eye location in world coords.
     
     'varying vec4 v_color;  \n' +
@@ -283,31 +280,30 @@ function VBObox1() {
     'void main(){ \n' +
 
     '  vec4 vertexPosition = u_modelMat * a_position;\n' +
-    '  vec4 normalPosition = u_normalMat * a_normal;\n' +
-    
-    '  vec3 lightDirection = normalize(u_lightPos - vertexPosition.xyz);\n' +
+    '  vec3 normal = normalize(vec3(u_normalMat * a_normal));\n' +
+    '  vec3 lightDirection = normalize(u_LampSet[0].pos - vertexPosition.xyz);\n' +
     '  vec3 eyeDirection = normalize(u_eyePosWorld - vertexPosition.xyz); \n' +
     
-    '  vec3 N = normalize(normalPosition.xyz);\n' + 
-    '  float nDotL = max(dot(lightDirection, N), 0.0);\n' +
+    '  float nDotL = max(dot(lightDirection, normal), 0.0);\n' +
     
     '  float specular = 0.0; \n' +
-    '  if(nDotL > 0.0) { \n' +
-    '    if(u_lightMode == 0) { \n' +
-    '      vec3 H = normalize(lightDirection + eyeDirection); \n' +
-  	'      float nDotH = max(dot(H, N), 0.0); \n' +
-    '      specular = pow(nDotH, u_shininessVal); \n' +
-    '    } else { \n' +
-    '      vec3 R = reflect(lightDirection, N);      // Reflected light vector \n' +
-    '      vec3 V = normalize(eyeDirection); // Vector to viewer \n' +
-    '      float specAngle = max(dot(-R, V), 0.0); \n' +
-    '      specular = pow(specAngle, u_shininessVal); \n' +
-    '    } \n' +
+    '  if(u_lightMode == 0) { \n' +
+    '    vec3 H = normalize(lightDirection + eyeDirection); \n' +
+  	'    float nDotH = max(dot(H, normal), 0.0); \n' +
+    '    specular = pow(nDotH, float(u_MatlSet[0].shiny)); \n' +
+    '  } else { \n' +
+    '    vec3 R = reflect(lightDirection, normal);      // Reflected light vector \n' +
+    '    vec3 V = normalize(eyeDirection); // Vector to viewer \n' +
+    '    float specAngle = max(dot(-R, V), 0.0); \n' +
+    '    specular = pow(specAngle, float(u_MatlSet[0].shiny)); \n' +
     '  } \n' +
-
-    '  v_color = vec4(u_Ka * u_ambientColor + \n' +
-    '               u_Kd * nDotL * u_diffuseColor  + \n' +
-    '                   u_Ks * specular * u_specularColor, 1.0); \n' +
+    
+    '	 vec3 emissive = 										u_MatlSet[0].emit;' +
+    '  vec3 ambient = u_LampSet[0].ambi * u_MatlSet[0].ambi;\n' +
+    '  vec3 diffuse = u_LampSet[0].diff * u_MatlSet[0].diff * nDotL;\n' +
+    '	 vec3 speculr = u_LampSet[0].spec * u_MatlSet[0].spec * specular;\n' +
+    '  v_color = vec4(emissive + ambient + diffuse + speculr , 1.0);\n' +
+    
     '  gl_Position = u_pvMat * vertexPosition; \n' +
     '} \n'
 
@@ -387,6 +383,10 @@ function VBObox1() {
   this.modelview = new Matrix4()
   this.normalMat = new Matrix4()
 
+  this.lamp0 = new LightsT();
+
+  this.matlSel= MATL_RED_PLASTIC;				// see keypress(): 'm' key changes matlSel
+  this.matl0 = new Material(this.matlSel);	
 };
 
 
@@ -470,8 +470,36 @@ VBObox1.prototype.init = function () {
       !this.u_lightPosLoc
     );
     console.log('Failed to get the storage location');
+    //return;
+  }
+
+  this.lamp0.u_pos  = gl.getUniformLocation(gl.program, 'u_LampSet[0].pos');	
+  this.lamp0.u_ambi = gl.getUniformLocation(gl.program, 'u_LampSet[0].ambi');
+  this.lamp0.u_diff = gl.getUniformLocation(gl.program, 'u_LampSet[0].diff');
+  this.lamp0.u_spec = gl.getUniformLocation(gl.program, 'u_LampSet[0].spec');
+  if( !this.lamp0.u_pos || !this.lamp0.u_ambi	|| !this.lamp0.u_diff || !this.lamp0.u_spec	) {
+    console.log('Failed to get GPUs Lamp0 storage locations');
     return;
   }
+
+  this.matl0.uLoc_Ke = gl.getUniformLocation(gl.program, 'u_MatlSet[0].emit');
+	this.matl0.uLoc_Ka = gl.getUniformLocation(gl.program, 'u_MatlSet[0].ambi');
+	this.matl0.uLoc_Kd = gl.getUniformLocation(gl.program, 'u_MatlSet[0].diff');
+	this.matl0.uLoc_Ks = gl.getUniformLocation(gl.program, 'u_MatlSet[0].spec');
+	this.matl0.uLoc_Kshiny = gl.getUniformLocation(gl.program, 'u_MatlSet[0].shiny');
+	if(!this.matl0.uLoc_Ke || !this.matl0.uLoc_Ka || !this.matl0.uLoc_Kd 
+			  	  		    || !this.matl0.uLoc_Ks || !this.matl0.uLoc_Kshiny
+		 ) {
+		console.log('Failed to get GPUs Reflectance storage locations');
+		return;
+	}
+
+
+  this.lamp0.I_pos.elements.set( [6.0, 5.0, 5.0]);
+  this.lamp0.I_ambi.elements.set([0.4, 0.4, 0.4]);
+  this.lamp0.I_diff.elements.set([1.0, 1.0, 1.0]);
+  this.lamp0.I_spec.elements.set([1.0, 1.0, 1.0]);
+
 }
 
 VBObox1.prototype.switchToMe = function () {
@@ -531,6 +559,19 @@ VBObox1.prototype.adjust = function () {
   gl.uniform3f(this.u_specularColorLoc, 0.8, 0.8, 0.8);
   gl.uniform3f(this.u_lightPosLoc, 2.0, 1.0, 1.0);
   gl.uniform3f(this.u_eyePosWorldLoc, g_eye_point_v[0], g_eye_point_v[1], g_eye_point_v[2]);
+
+
+  gl.uniform3fv(this.lamp0.u_pos,  this.lamp0.I_pos.elements.slice(0,3));
+  gl.uniform3fv(this.lamp0.u_ambi, this.lamp0.I_ambi.elements);		// ambient
+  gl.uniform3fv(this.lamp0.u_diff, this.lamp0.I_diff.elements);		// diffuse
+  gl.uniform3fv(this.lamp0.u_spec, this.lamp0.I_spec.elements);		// Specular
+
+	//---------------For the Material object(s):
+	gl.uniform3fv(this.matl0.uLoc_Ke, this.matl0.K_emit.slice(0,3));				// Ke emissive
+	gl.uniform3fv(this.matl0.uLoc_Ka, this.matl0.K_ambi.slice(0,3));				// Ka ambient
+  gl.uniform3fv(this.matl0.uLoc_Kd, this.matl0.K_diff.slice(0,3));				// Kd	diffuse
+	gl.uniform3fv(this.matl0.uLoc_Ks, this.matl0.K_spec.slice(0,3));				// Ks specular
+	gl.uniform1i(this.matl0.uLoc_Kshiny, parseInt(this.matl0.K_shiny, 10));     // Kshiny 
 
 
   this.ModelMatrix.setTranslate( 0,0, 0);
@@ -624,13 +665,12 @@ function VBObox2() {
     'uniform MatlT u_MatlSet[1];\n' +		// Array of all materials.
   
     'uniform mat4 u_pvMat, u_modelMat, u_normalMat; \n' +
-    'uniform int u_lightMode;    \n' +
     
     'varying vec4 v_color;  \n' +
     'varying vec3 v_Kd;  \n' +
     'varying vec4 v_Position;  \n' +
     'varying vec3 v_Normal;  \n' +
-
+    
     'void main(){ \n' +
     '  gl_Position = u_pvMat * u_modelMat * a_position;\n' +
     '  v_Position = u_modelMat * a_position; \n' +
@@ -639,57 +679,66 @@ function VBObox2() {
 	  '	 v_Kd = u_MatlSet[0].diff; \n' +
     '	 v_color = vec4(1.0,1.0,1.0,1.0); \n' +		// find per-pixel diffuse reflectance from per-vertex
     '} \n'
+    
+    // SHADED, sphere-like dots:
+    this.FRAG_SRC = 
+    'precision highp float;\n' +
+    'precision highp int;\n' +
+    //
+    //--------------- GLSL Struct Definitions:
+    'struct LampT {\n' +		// Describes one point-like Phong light source
+    '		vec3 pos;\n' +			// (x,y,z,w); w==1.0 for local light at x,y,z position
+    //		   w==0.0 for distant light from x,y,z direction 
+    ' 	vec3 ambi;\n' +			// Ia ==  ambient light source strength (r,g,b)
+    ' 	vec3 diff;\n' +			// Id ==  diffuse light source strength (r,g,b)
+    '		vec3 spec;\n' +			// Is == specular light source strength (r,g,b)
+    '}; \n' +
+    //
+    'struct MatlT {\n' +		// Describes one Phong material by its reflectances:
+    '		vec3 emit;\n' +			// Ke: emissive -- surface 'glow' amount (r,g,b);
+    '		vec3 ambi;\n' +			// Ka: ambient reflectance (r,g,b)
+    '		vec3 diff;\n' +			// Kd: diffuse reflectance (r,g,b)
+    '		vec3 spec;\n' + 		// Ks: specular reflectance (r,g,b)
+    '		int shiny;\n' +			// Kshiny: specular exponent (integer >= 1; typ. <200)
+    '		};\n' +
+    
+    'uniform LampT u_LampSet[1];\n' +		// Array of all light sources.
+    'uniform MatlT u_MatlSet[1];\n' +		// Array of all materials.
+    
+    'uniform vec3 u_eyePosWorld; \n' + 	// Camera/eye location in world coords.
+    'uniform int u_lightMode;    \n' +
+    
+    'varying vec3 v_Normal;\n' +				// Find 3D surface normal at each pix
+    'varying vec4 v_Position;\n' +			// pixel's 3D pos too -- in 'world' coords
+    'varying vec3 v_Kd;	\n' +						// Find diffuse reflectance K_d per pix
+    
+    'varying vec4 v_color;\n' +
+    'void main() {\n' +
+    '  vec3 normal = normalize(v_Normal); \n' +
+    '  vec3 lightDirection = normalize(u_LampSet[0].pos - v_Position.xyz);\n' +
+    '  vec3 eyeDirection = normalize(u_eyePosWorld - v_Position.xyz); \n' +
 
-      // SHADED, sphere-like dots:
-  this.FRAG_SRC = 
-  'precision highp float;\n' +
-  'precision highp int;\n' +
-  //
-	//--------------- GLSL Struct Definitions:
-	'struct LampT {\n' +		// Describes one point-like Phong light source
-	'		vec3 pos;\n' +			// (x,y,z,w); w==1.0 for local light at x,y,z position
-													//		   w==0.0 for distant light from x,y,z direction 
-	' 	vec3 ambi;\n' +			// Ia ==  ambient light source strength (r,g,b)
-	' 	vec3 diff;\n' +			// Id ==  diffuse light source strength (r,g,b)
-	'		vec3 spec;\n' +			// Is == specular light source strength (r,g,b)
-	'}; \n' +
-	//
-	'struct MatlT {\n' +		// Describes one Phong material by its reflectances:
-	'		vec3 emit;\n' +			// Ke: emissive -- surface 'glow' amount (r,g,b);
-	'		vec3 ambi;\n' +			// Ka: ambient reflectance (r,g,b)
-	'		vec3 diff;\n' +			// Kd: diffuse reflectance (r,g,b)
-	'		vec3 spec;\n' + 		// Ks: specular reflectance (r,g,b)
-	'		int shiny;\n' +			// Kshiny: specular exponent (integer >= 1; typ. <200)
-  '		};\n' +
+    '  float nDotL = max(dot(lightDirection, normal), 0.0); \n' +
+    
 
-  'uniform LampT u_LampSet[1];\n' +		// Array of all light sources.
-	'uniform MatlT u_MatlSet[1];\n' +		// Array of all materials.
-	
-  'uniform vec3 u_eyePosWorld; \n' + 	// Camera/eye location in world coords.
+    '  float specular = 0.0; \n' +
+    '  if(u_lightMode == 0) { \n' +
+    '    vec3 H = normalize(lightDirection + eyeDirection); \n' +
+  	'    float nDotH = max(dot(H, normal), 0.0); \n' +
+    '    specular = pow(nDotH, float(u_MatlSet[0].shiny)); \n' +
+    '  } else { \n' +
+    '    vec3 R = reflect(lightDirection, normal);      // Reflected light vector \n' +
+    '    vec3 V = normalize(eyeDirection); // Vector to viewer \n' +
+    '    float specAngle = max(dot(-R, V), 0.0); \n' +
+    '    specular = pow(specAngle, float(u_MatlSet[0].shiny)); \n' +
+    '  } \n' +
 
-  'varying vec3 v_Normal;\n' +				// Find 3D surface normal at each pix
-  'varying vec4 v_Position;\n' +			// pixel's 3D pos too -- in 'world' coords
-  'varying vec3 v_Kd;	\n' +						// Find diffuse reflectance K_d per pix
-
-  'varying vec4 v_color;\n' +
-  'void main() {\n' +
-	'  vec3 normal = normalize(v_Normal); \n' +
-	'  vec3 lightDirection = normalize(u_LampSet[0].pos - v_Position.xyz);\n' +
-	'  vec3 eyeDirection = normalize(u_eyePosWorld - v_Position.xyz); \n' +
-
-	'  float nDotL = max(dot(lightDirection, normal), 0.0); \n' +
-  
-	'  vec3 H = normalize(lightDirection + eyeDirection); \n' +
-	'  float nDotH = max(dot(H, normal), 0.0); \n' +
-
-	'  float e64 = pow(nDotH, float(u_MatlSet[0].shiny));\n' +
-
-  '	 vec3 emissive = 										u_MatlSet[0].emit;' +
-  '  vec3 ambient = u_LampSet[0].ambi * u_MatlSet[0].ambi;\n' +
-  '  vec3 diffuse = u_LampSet[0].diff * v_Kd * nDotL;\n' +
-  '	 vec3 speculr = u_LampSet[0].spec * u_MatlSet[0].spec * e64;\n' +
-  '  gl_FragColor = vec4(emissive + ambient + diffuse + speculr , 1.0);\n' +
-  '}\n';
+    '	 vec3 emissive = 										u_MatlSet[0].emit;' +
+    '  vec3 ambient = u_LampSet[0].ambi * u_MatlSet[0].ambi;\n' +
+    '  vec3 diffuse = u_LampSet[0].diff * v_Kd * nDotL;\n' +
+    '	 vec3 speculr = u_LampSet[0].spec * u_MatlSet[0].spec * specular;\n' +
+    '  gl_FragColor = vec4(emissive + ambient + diffuse + speculr , 1.0);\n' +
+    '}\n';
 
 /*
   // SHADED, sphere-like dots:
