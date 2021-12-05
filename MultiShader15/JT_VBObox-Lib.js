@@ -237,36 +237,6 @@ WorldBox.prototype.reload = function () {
     this.vboContents);   // the JS source-data array used to fill VBO
 
 }
-/*
-VBObox0.prototype.empty = function() {
-//=============================================================================
-// Remove/release all GPU resources used by this VBObox object, including any 
-// shader programs, attributes, uniforms, textures, samplers or other claims on 
-// GPU memory.  However, make sure this step is reversible by a call to 
-// 'restoreMe()': be sure to retain all our Float32Array data, all values for 
-// uniforms, all stride and offset values, etc.
-//
-//
-// 		********   YOU WRITE THIS! ********
-//
-//
-//
-}
-
-VBObox0.prototype.restore = function() {
-//=============================================================================
-// Replace/restore all GPU resources used by this VBObox object, including any 
-// shader programs, attributes, uniforms, textures, samplers or other claims on 
-// GPU memory.  Use our retained Float32Array data, all values for  uniforms, 
-// all stride and offset values, etc.
-//
-//
-// 		********   YOU WRITE THIS! ********
-//
-//
-//
-}
-*/
 
 //=============================================================================
 //=============================================================================
@@ -275,32 +245,66 @@ function VBObox1() {
   this.VERT_SRC =	//--------------------- VERTEX SHADER source code 
     'precision highp float;\n' +				// req'd in OpenGL ES if we use 'float'
     //
-    'uniform mat4 u_MvpMatrix;\n' +
-    'uniform mat4 u_ModelMatrix;\n' +
-    'uniform mat4 u_NormalMatrix;\n' +
-    'attribute vec4 a_Pos1;\n' +
-    'attribute vec3 a_Normal;\n' +
-    'uniform vec3 u_LightColor;\n' +     // Light color
-    'uniform vec3 u_LightPosition;\n' +  // Position of the light source
-    'uniform vec3 u_AmbientLight;\n' +   // Ambient light color
+    'attribute vec4 a_position; \n' +
+    'attribute vec4 a_normal; \n' +
+    'uniform mat4 projection, modelview, normalMat; \n' +
+    'varying vec3 normalInterp; \n' +
+    'varying vec3 vertPos; \n' +
+    'uniform int mode;    \n' +
+    'uniform float Ka;    \n' +
+    'uniform float Kd;    \n' +
+    'uniform float Ks;    \n' +
+    'uniform float shininessVal;  \n' +
+    'uniform vec3 ambientColor; \n' +
+    'uniform vec3 diffuseColor; \n' +
+    'uniform vec3 specularColor; \n' +
+    'uniform vec3 lightPos;  \n' +
+    'uniform vec3 u_eyePosWorld; \n' + 	// Camera/eye location in world coords.
+    'varying vec4 color;  \n' +
 
-    'attribute vec3 a_Colr1;\n' +
-    'varying vec4 v_Colr1;\n' +
-    //
-    'void main() {\n' +
-    'vec4 transVec = u_NormalMatrix * vec4(a_Normal, 0.0);\n' +
-    'vec3 normVec = normalize(transVec.xyz);\n' +
-    'vec3 lightVec = vec3(1.0, 0.0, 1.0);\n' +
-    '  gl_Position = u_MvpMatrix * a_Pos1;\n' +
-    '	 v_Colr1 = vec4(a_Colr1*dot(normVec,lightVec), 1.0);\n' +
-    ' }\n';
+    'void main(){ \n' +
+
+    '  vec3 normal2 = normalize(vec3(normalMat * a_normal));\n' +
+     // Calculate world coordinate of vertex
+    '  vec4 vertexPosition = modelview * a_position;\n' +
+      // Calculate the light direction and make it 1.0 in length
+    '  vec3 lightDirection = normalize(lightPos - vec3(vertexPosition));\n' +
+      // The dot product of the light direction and the normal
+    '  float nDotL = max(dot(lightDirection, vec3(normal2)), 0.0);\n' +
+
+    '  vec3 diffuse = diffuseColor * nDotL;\n' +
+    // Calculate the color due to ambient reflection
+
+     '  gl_Position = projection * vertexPosition; \n' +
+     '  vec3 eyeDirection = normalize(u_eyePosWorld - vertexPosition.xyz); \n' +
+	
+
+    '  vertPos = vec3(vertexPosition); \n' +
+    '  vec3 N = normal2; \n' +
+    '  vec3 L = lightDirection; \n' +
+    '  float lambertian = nDotL; \n' +
+    '  float specular = 0.0; \n' +
+    '  if(lambertian > 0.0) { \n' +
+    '    vec3 R = reflect(L, N);      // Reflected light vector \n' +
+    '    vec3 V = normalize(-eyeDirection); // Vector to viewer \n' +
+    '    float specAngle = max(dot(R, V), 0.0); \n' +
+    '    specular = pow(specAngle, shininessVal); \n' +
+    '  } \n' +
+    '  color = vec4(Ka * ambientColor + \n' +
+    '               Kd * nDotL * diffuseColor  + \n' +
+'                   Ks * specular * specularColor, 1.0); \n' +
+
+    // '  if(mode == 2) color = vec4(Ka * ambientColor, 1.0); \n' +
+    // '  if(mode == 3) color = vec4(Kd * lambertian * diffuseColor, 1.0); \n' +
+    // '  if(mode == 4) color = vec4(Ks * specular * specularColor, 1.0); \n' +
+    '} \n'
 
   // SHADED, sphere-like dots:
   this.FRAG_SRC = //---------------------- FRAGMENT SHADER source code 
     'precision mediump float;\n' +
-    'varying vec4 v_Colr1;\n' +
+    'varying vec4 color;\n' +
     'void main() {\n' +
-    '  gl_FragColor = v_Colr1; \n' +
+    '  gl_FragColor = color; \n' +
     '}\n';
 
   var c30 = Math.sqrt(0.75);					// == cos(30deg) == sqrt(3) / 2
@@ -311,84 +315,9 @@ function VBObox1() {
   var sq89 = Math.sqrt(8.0 / 9.0)
   var thrd = 1.0 / 3.0;
 
-  this.vboContents = new Float32Array([
-    // Vertex coordinates(x,y,z,w) and color (R,G,B) for a new color tetrahedron:
-    // HOW TO BUILD A SYMMETRICAL TETRAHEDRON:
-    //	--define it by 4 'nodes' (locations where we place 1 or more vertices).
-    //	--Each node connects to every other node by an 'edge'.
-    //	--Any 3 nodes chosen will form an equilateral triangle from 3 edges.
-    //	--Every corner of every equilateral triangle forms a 60 degree angle.
-    //	--We can define the 'center' of an equilateral triangle as the point
-    //		location equally distant from each triangle corner.  
-    //		Equivalently, the center point is the intersection of the lines that 
-    //		bisect the 60-degree angles at each corner of the triangle.
-    //	--Begin by defining an equilateral triangle in xy plane with center point 
-    //		at the origin. Create each node by adding a unit vector to the origin;
-    //		node n1 at (0,1,0);
-    //	  node n2 at ( cos30, -0.5, 0)  (30 degrees below x axis)
-    //		node n3 at (-cos30, -0.5, 0)  (Note that cos30 = sqrt(3)/2).
-    //	--Note the triangle's 'height' in y is 1.5 (from y=-0.5 to y= +1.0).
-    //	--Choose node on +z axis at location that will form equilateral triangles
-    //		with the sides of the n1,n2,n3 triangle edges.
-    //	--Look carefully at the n0,n3,n1 triangle; its height (1.5) stretches from
-    //		(0,-0.5,0) to node n0 at (0,0,zheight).  Thus 1.5^2 = 0.5^2 + zheight^2,
-    //		or 2.25 = 0.25 + zHeight^2; thus zHeight==sqrt2.
-    // 		node n0 == Apex on +z axis; equilateral triangle base at z=0.
-    //  -- SURFACE NORMALS?
-    //		See: '2016.02.17.HowToBuildTetrahedron.pdf' on Canvas
-    //
-    /*	Nodes:
-         0.0,	 0.0, sq2, 1.0,			0.0, 	0.0,	1.0,	// Node 0 (apex, +z axis;  blue)
-         c30, -0.5, 0.0, 1.0, 		1.0,  0.0,  0.0, 	// Node 1 (base: lower rt; red)
-         0.0,  1.0, 0.0, 1.0,  		0.0,  1.0,  0.0,	// Node 2 (base: +y axis;  grn)
-        -c30, -0.5, 0.0, 1.0, 		1.0,  1.0,  1.0, 	// Node 3 (base:lower lft; white)
-    */
+  this.vboContents = makeSphere()
 
-    // Face 0: (right side).  Unit Normal Vector: N0 = (sq23, sq29, thrd)
-    // Node 0 (apex, +z axis; 			color--blue, 				surf normal (all verts):
-    0.0, 0.0, sq2, 1.0, 0.0, 0.0, 1.0, sq23, sq29, thrd,
-    // Node 1 (base: lower rt; red)
-    c30, -0.5, 0.0, 1.0, 1.0, 0.0, 0.0, sq23, sq29, thrd,
-    // Node 2 (base: +y axis;  grn)
-    0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, sq23, sq29, thrd,
-    // Face 1: (left side).		Unit Normal Vector: N1 = (-sq23, sq29, thrd)
-    // Node 0 (apex, +z axis;  blue)
-    0.0, 0.0, sq2, 1.0, 0.0, 0.0, 1.0, -sq23, sq29, thrd,
-    // Node 2 (base: +y axis;  grn)
-    0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, -sq23, sq29, thrd,
-    // Node 3 (base:lower lft; white)
-    -c30, -0.5, 0.0, 1.0, 1.0, 1.0, 1.0, -sq23, sq29, thrd,
-    // Face 2: (lower side) 	Unit Normal Vector: N2 = (0.0, -sq89, thrd)
-    // Node 0 (apex, +z axis;  blue) 
-    0.0, 0.0, sq2, 1.0, 0.0, 0.0, 1.0, 0.0, -sq89, thrd,
-    // Node 3 (base:lower lft; white)
-    -c30, -0.5, 0.0, 1.0, 1.0, 1.0, 1.0, 0.0, -sq89, thrd,          																							//0.0, 0.0, 0.0, // Normals debug
-    // Node 1 (base: lower rt; red) 
-    c30, -0.5, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, -sq89, thrd,
-    // Face 3: (base side)  Unit Normal Vector: N2 = (0.0, 0.0, -1.0)
-    // Node 3 (base:lower lft; white)
-    -c30, -0.5, 0.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, -1.0,
-    // Node 2 (base: +y axis;  grn)
-    0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0, -1.0,
-    // Node 1 (base: lower rt; red)
-    c30, -0.5, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, -1.0,
-
-    // Drawing Axes: Draw them using gl.LINES drawing primitive;
-    //--------------------------------------------------------------
-    // +x axis RED; +y axis GREEN; +z axis BLUE; origin: GRAY
-    // (I added 'normal vectors' to stay compatible with tetrahedron verts)
-    // X axis line 	(origin: gray -- endpoint: red. 			Normal Vector: +y
-    0.0, 0.0, 0.0, 1.0, 0.3, 0.3, 0.3, 0.0, 1.0, 0.0,
-    1.3, 0.0, 0.0, 1.0, 1.0, 0.3, 0.3, 0.0, 1.0, 0.0,
-    // Y axis line:	(origin: gray -- endpoint: green			Normal Vector: +z)
-    0.0, 0.0, 0.0, 1.0, 0.3, 0.3, 0.3, 0.0, 0.0, 1.0,
-    0.0, 1.3, 0.0, 1.0, 0.3, 1.0, 0.3, 0.0, 0.0, 1.0,
-    // Z axis line: (origin: gray -- endpoint: blue				Normal Vector: +x)
-    0.0, 0.0, 0.0, 1.0, 0.3, 0.3, 0.3, 1.0, 0.0, 0.0,
-    0.0, 0.0, 1.3, 1.0, 0.3, 0.3, 1.0, 1.0, 0.0, 0.0,
-  ]);
-
-  this.vboVerts = this.vboContents.length / 10;							// # of vertices held in 'vboContents' array;
+  this.vboVerts = this.vboContents.length / 7;							// # of vertices held in 'vboContents' array;
   this.FSIZE = this.vboContents.BYTES_PER_ELEMENT;
   // bytes req'd by 1 vboContents array element;
   // (why? used to compute stride and offset 
@@ -406,7 +335,7 @@ function VBObox1() {
   this.vboFcount_a_Pos1 = 4;    // # of floats in the VBO needed to store the
   // attribute named a_Pos1. (4: x,y,z,w values)
   this.vboFcount_a_Colr1 = 3;   // # of floats for this attrib (r,g,b values)
-  this.vboFcount_a_Normal = 3;  // # of floats for this attrib (just one!)   
+  this.vboFcount_a_Normal = 0;  // # of floats for this attrib (just one!)   
   console.assert((this.vboFcount_a_Pos1 +     // check the size of each and
     this.vboFcount_a_Colr1 +
     this.vboFcount_a_Normal) *   // every attribute in our VBO
@@ -432,21 +361,27 @@ function VBObox1() {
   this.shaderLoc;								// GPU Location for compiled Shader-program  
   // set by compile/link of VERT_SRC and FRAG_SRC.
   //------Attribute locations in our shaders:
-  this.a_Pos1Loc;							  // GPU location: shader 'a_Pos1' attribute
-  this.a_Colr1Loc;							// GPU location: shader 'a_Colr1' attribute
-  this.a_NormalLoc;							// GPU location: shader 'a_PtSiz1' attribute
 
-  //---------------------- Uniform locations &values in our shaders
-  this.ModelMatrix = new Matrix4();	// Transforms CVV axes to model axes.
-  this.u_ModelMatrixLoc;
-  this.MvpMatrix = new Matrix4()
-  this.u_MvpMatrixLoc;						// GPU location for u_ModelMat uniform
-  this.NormalMatrix = new Matrix4();						// GPU location for u_ModelMat uniform
-  this.u_NormalMatrixLoc;						// GPU location for u_ModelMat uniform
+  this.positionLoc;
+  this.normalLoc;
+  this.projectionLoc
+  this.modelviewLoc
+  this.normalMatLoc;
+  this.modeLoc;
+  this.KaLoc;
+  this.KdLoc;
+  this.KsLoc;
+  this.shininessValLoc;
+  this.ambientColorLoc;
+  this.diffuseColorLoc;
+  this.specularColorLoc;
+  this.lightPosLoc;
+  this.u_eyePosWorldLoc;
 
-  this.u_LightColorLoc;
-  this.u_LightPositionLoc;
-  this.u_AmbientLightLoc;
+  this.ModelMatrix = new Matrix4()
+  this.projection = new Matrix4()
+  this.modelview = new Matrix4()
+  this.normalMat = new Matrix4()
 
 };
 
@@ -480,20 +415,56 @@ VBObox1.prototype.init = function () {
     gl.STATIC_DRAW);			// Usage hint.  
 
 
-  this.a_Pos1Loc = gl.getAttribLocation(this.shaderLoc, 'a_Pos1');
-  this.a_Colr1Loc = gl.getAttribLocation(this.shaderLoc, 'a_Colr1');
-  this.a_NormalLoc = gl.getAttribLocation(this.shaderLoc, 'a_Normal');
 
-  // c2) Find All Uniforms:-----------------------------------------------------
-  //Get GPU storage location for each uniform var used in our shader programs: 
-  this.u_MvpMatrixLoc = gl.getUniformLocation(this.shaderLoc, 'u_MvpMatrix');
-  this.u_NormalMatrixLoc = gl.getUniformLocation(this.shaderLoc, 'u_NormalMatrix');
-  this.u_ModelMatrixLoc = gl.getUniformLocation(gl.program, 'u_ModelMatrix');
-  this.u_LightColorLoc = gl.getUniformLocation(gl.program, 'u_LightColor');
-  this.u_LightPositionLoc = gl.getUniformLocation(gl.program, 'u_LightPosition');
-  this.u_AmbientLightLoc = gl.getUniformLocation(gl.program, 'u_AmbientLight');
+  this.positionLoc = gl.getAttribLocation(this.shaderLoc, 'a_position');
+  this.normalLoc = gl.getAttribLocation(this.shaderLoc, 'a_normal');
+  this.projectionLoc = gl.getUniformLocation(this.shaderLoc, 'projection');
+  this.modelviewLoc = gl.getUniformLocation(this.shaderLoc, 'modelview');
+  this.normalMatLoc = gl.getUniformLocation(this.shaderLoc, 'normalMat');
+  this.modeLoc = gl.getUniformLocation(this.shaderLoc, 'mode');
+  this.KaLoc = gl.getUniformLocation(this.shaderLoc, 'Ka');
+  this.KdLoc = gl.getUniformLocation(this.shaderLoc, 'Kd');
+  this.KsLoc = gl.getUniformLocation(this.shaderLoc, 'Ks');
+  this.shininessValLoc = gl.getUniformLocation(this.shaderLoc, 'shininessVal');
+  this.ambientColorLoc = gl.getUniformLocation(this.shaderLoc, 'ambientColor');
+  this.diffuseColorLoc = gl.getUniformLocation(this.shaderLoc, 'diffuseColor');
+  this.specularColorLoc = gl.getUniformLocation(this.shaderLoc, 'specularColor');
+  this.lightPosLoc = gl.getUniformLocation(this.shaderLoc, 'lightPos');
+  this.u_eyePosWorldLoc = gl.getUniformLocation(this.shaderLoc, 'u_eyePosWorld');
 
-  if (!this.a_Pos1Loc || !this.a_Colr1Loc || !this.a_NormalLoc || !this.u_MvpMatrixLoc || !this.u_NormalMatrixLoc || !this.u_ModelMatrixLoc || !this.u_LightColorLoc || !this.u_LightPositionLoc || !this.u_AmbientLightLoc) {
+  if (
+    this.positionLoc < 0 ||
+    this.normalLoc < 0 ||
+    !this.projectionLoc ||
+    !this.modelviewLoc ||
+    !this.normalMatLoc ||
+    !this.modeLoc ||
+    !this.KaLoc ||
+    !this.KdLoc ||
+    !this.KsLoc ||
+    !this.shininessValLoc ||
+    !this.ambientColorLoc ||
+    !this.diffuseColorLoc ||
+    !this.specularColorLoc ||
+    !this.lightPosLoc ||
+    !this.u_eyePosWorldLoc
+  ) {
+    console.log(
+      this.positionLoc + ' ' +
+      this.normalLoc + ' ' +
+      !this.projectionLoc + ' ' +
+      !this.modelviewLoc + ' ' +
+      !this.normalMatLoc + ' ' +
+      !this.modeLoc + ' ' +
+      !this.KaLoc + ' ' +
+      !this.KdLoc + ' ' +
+      !this.KsLoc + ' ' +
+      !this.shininessValLoc + ' ' +
+      !this.ambientColorLoc + ' ' +
+      !this.diffuseColorLoc + ' ' +
+      !this.specularColorLoc + ' ' +
+      !this.lightPosLoc
+    );
     console.log('Failed to get the storage location');
     return;
   }
@@ -505,32 +476,15 @@ VBObox1.prototype.switchToMe = function () {
   gl.bindBuffer(gl.ARRAY_BUFFER,	    // GLenum 'target' for this GPU buffer 
     this.vboLoc);			// the ID# the GPU uses for our VBO.
 
-  gl.vertexAttribPointer(
-    this.a_Pos1Loc,//index == ID# for the attribute var in GLSL shader pgm;
-    this.vboFcount_a_Pos1, // # of floats used by this attribute: 1,2,3 or 4?
-    gl.FLOAT,		  // type == what data type did we use for those numbers?
-    false,				// isNormalized == are these fixed-point values that we need
-    //									normalize before use? true or false
-    this.vboStride,// Stride == #bytes we must skip in the VBO to move from the
-    // stored attrib for this vertex to the same stored attrib
-    //  for the next vertex in our VBO.  This is usually the 
-    // number of bytes used to store one complete vertex.  If set 
-    // to zero, the GPU gets attribute values sequentially from 
-    // VBO, starting at 'Offset'.	
-    // (Our vertex size in bytes: 4 floats for pos + 3 for color)
-    this.vboOffset_a_Pos1);
-  // Offset == how many bytes from START of buffer to the first
-  // value we will actually use?  (we start with position).
-  gl.vertexAttribPointer(this.a_Colr1Loc, this.vboFcount_a_Colr1,
+  gl.vertexAttribPointer(this.positionLoc, this.vboFcount_a_Pos1,
     gl.FLOAT, false,
-    this.vboStride, this.vboOffset_a_Colr1);
-  gl.vertexAttribPointer(this.a_NormalLoc, this.vboFcount_a_Normal,
+    this.vboStride, this.vboOffset_a_Pos1);
+  gl.vertexAttribPointer(this.normalLoc, this.vboFcount_a_Pos1,
     gl.FLOAT, false,
-    this.vboStride, this.vboOffset_a_Normal);
-  //-- Enable this assignment of the attribute to its' VBO source:
-  gl.enableVertexAttribArray(this.a_Pos1Loc);
-  gl.enableVertexAttribArray(this.a_Colr1Loc);
-  gl.enableVertexAttribArray(this.a_NormalLoc);
+    this.vboStride, this.vboOffset_a_Pos1);
+
+  gl.enableVertexAttribArray(this.positionLoc);
+  gl.enableVertexAttribArray(this.normalLoc);
 }
 
 VBObox1.prototype.isReady = function () {
@@ -555,29 +509,38 @@ VBObox1.prototype.isReady = function () {
 }
 
 VBObox1.prototype.adjust = function () {
-  
+
   if (this.isReady() == false) {
     console.log('ERROR! before' + this.constructor.name +
       '.adjust() call you needed to call this.switchToMe()!!');
   }
 
-  gl.uniform3f(this.u_LightColorLoc, 0.8, 0.8, 0.8);
+  //  gl.uniform3f(this.u_LightColorLoc, 0.8, 0.8, 0.8);
   // Set the light direction (in the world coordinate)
-  gl.uniform3f(this.u_LightPositionLoc, 5.0, 8.0, 7.0);
-  // Set the ambient light
-  gl.uniform3f(this.u_AmbientLightLoc, 0.2, 0.2, 0.2);
+  gl.uniform1i(this.modeLoc, 1)
+  gl.uniform1f(this.KaLoc, 1.0)
+  gl.uniform1f(this.KdLoc, 1.0)
+  gl.uniform1f(this.KsLoc, 1.0)
+  gl.uniform1f(this.shininessValLoc, 55.0)
+  gl.uniform3f(this.ambientColorLoc, 0.2, 0.2, 0.2);
+  gl.uniform3f(this.diffuseColorLoc, 0.8, 0.2, 0.2);
+  gl.uniform3f(this.specularColorLoc, 0.8, 0.8, 0.8);
+  gl.uniform3f(this.lightPosLoc, 2.0, 1.0, 1.0);
+  gl.uniform3f(this.u_eyePosWorldLoc, g_eye_point_v[0], g_eye_point_v[1], g_eye_point_v[2]);
 
 
-  this.ModelMatrix.setRotate(g_angleNow0, 0, 0, 1);	// -spin drawing axes,
-  this.ModelMatrix.translate(0.35, -0.15, 0.1);	
-  gl.uniformMatrix4fv(this.u_ModelMatrixLoc, false, this.ModelMatrix.elements)
+  this.ModelMatrix.setRotate(g_angleNow0, 0, 0, 1);
+  //this.ModelMatrix.translate(0.35, -0.15, 0.1);
+  gl.uniformMatrix4fv(this.modelviewLoc, false, this.ModelMatrix.elements)
 
-  this.MvpMatrix = getMVPMatrix(this.ModelMatrix)
-  gl.uniformMatrix4fv(this.u_MvpMatrixLoc, false, this.MvpMatrix.elements);
   
-  this.NormalMatrix.setInverseOf(this.ModelMatrix)
-  this.NormalMatrix.transpose()
-  gl.uniformMatrix4fv(this.u_NormalMatrixLoc, false, this.NormalMatrix.elements);	
+  var mvpMat = new Matrix4()
+  mvpMat.set(g_projMatrix).multiply(g_viewMatrix)
+  gl.uniformMatrix4fv(this.projectionLoc, false, mvpMat.elements);
+
+  this.normalMat.setInverseOf(this.ModelMatrix)
+  this.normalMat.transpose()
+  gl.uniformMatrix4fv(this.normalMatLoc, false, this.normalMat.elements);
 
 }
 
@@ -592,11 +555,7 @@ VBObox1.prototype.draw = function () {
   }
 
   // ----------------------------Draw the contents of the currently-bound VBO:
-  gl.drawArrays(gl.TRIANGLES,		    // select the drawing primitive to draw:
-    // choices: gl.POINTS, gl.LINES, gl.LINE_STRIP, gl.LINE_LOOP, 
-    //          gl.TRIANGLES, gl.TRIANGLE_STRIP,
-    0, 								// location of 1st vertex to draw;
-    12);		// number of vertices to draw on-screen.
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, this.vboVerts)
 }
 
 
