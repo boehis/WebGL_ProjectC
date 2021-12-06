@@ -297,8 +297,39 @@ function VBObox1() {
     '  gl_FragColor = v_color; \n' +
     '}\n';
 
-  //this.vboContents = makeSphere()
-  this.vboContents = make_pyramide_vertecies()
+    this.sphere_verts = makeSphere()
+    this.pyramide_verts = make_pyramide_vertecies()
+    this.tor_verts = make_tor_vertecies()
+    this.cyl_verts = make_cyl_vertecies()
+    console.log(this.tor_verts.length);
+
+    var size = this.sphere_verts.length 
+    + this.pyramide_verts.length
+    + this.tor_verts.length
+    + this.cyl_verts.length
+
+    this.vboContents = new Float32Array(size)
+
+    var i = 0						
+    this.sphere_start = i;
+    for (j = 0; j < this.sphere_verts.length; i++, j++) {
+      this.vboContents[i] = this.sphere_verts[j];
+    }
+    this.pyra_start = i;	
+    for (j = 0; j < this.pyramide_verts.length; i++, j++) {
+      this.vboContents[i] = this.pyramide_verts[j];
+    }
+    this.tor_start = i;	
+    for (j = 0; j < this.tor_verts.length; i++, j++) {
+      this.vboContents[i] = this.tor_verts[j];
+    }
+    this.cyl_start = i;	
+    for (j = 0; j < this.cyl_verts.length; i++, j++) {
+      this.vboContents[i] = this.cyl_verts[j];
+    }
+    
+    
+    //this.vboContents = makeSphere()
   console.log(this.vboContents);
 
   this.vboVerts = this.vboContents.length / 8;							// # of vertices held in 'vboContents' array;
@@ -491,19 +522,10 @@ VBObox1.prototype.adjust = function () {
 	gl.uniform3fv(this.matl0.uLoc_Ks, this.matl0.K_spec.slice(0,3));				// Ks specular
 	gl.uniform1i(this.matl0.uLoc_Kshiny, parseInt(this.matl0.K_shiny, 10));     // Kshiny 
 
-
-  this.ModelMatrix.setTranslate( 0,0, 0);
-  this.ModelMatrix.rotate(g_angleNow0, 0, 0, 1);
-  gl.uniformMatrix4fv(this.u_modelMatLoc, false, this.ModelMatrix.elements)
-
   
   var pvMat = new Matrix4()
   pvMat.set(g_projMatrix).multiply(g_viewMatrix)
   gl.uniformMatrix4fv(this.u_pvMatLoc, false, pvMat.elements);
-
-  this.normalMat.setInverseOf(this.ModelMatrix)
-  this.normalMat.transpose()
-  gl.uniformMatrix4fv(this.u_normalMatLoc, false, this.normalMat.elements);
   this.reload()
 }
 
@@ -512,8 +534,27 @@ VBObox1.prototype.draw = function () {
     console.log('ERROR! before' + this.constructor.name +
       '.draw() call you needed to call this.switchToMe()!!');
   }
+  this.ModelMatrix.setTranslate( 0,0, 0);
+  this.ModelMatrix.rotate(g_angleNow0, 0, 0, 1);
+  setModelMatNormalMat(this)
+  gl.drawArrays(gl.TRIANGLE_STRIP, this.sphere_start, this.sphere_verts.length / 8)
 
-  gl.drawArrays(gl.TRIANGLES, 0, this.vboVerts)
+  this.ModelMatrix.setTranslate( 0,-3, 0);
+  this.ModelMatrix.rotate(g_angleNow0, 0, 0, 1);
+  setModelMatNormalMat(this)
+  gl.drawArrays(gl.TRIANGLES, this.pyra_start / 8, this.pyramide_verts.length / 8)
+
+
+  this.ModelMatrix.setTranslate( 0,3, 0);
+  this.ModelMatrix.rotate(g_angleNow0, 0, 0, 1);
+  setModelMatNormalMat(this)
+  gl.drawArrays(gl.TRIANGLE_STRIP, this.tor_start / 8, this.tor_verts.length / 8 )
+
+  
+  this.ModelMatrix.setTranslate( -3,0, 0);
+  this.ModelMatrix.rotate(g_angleNow0, 0, 0, 1);
+  setModelMatNormalMat(this)
+  gl.drawArrays(gl.TRIANGLE_STRIP, this.cyl_start / 8, this.cyl_verts.length / 8 )
 }
 
 
@@ -529,6 +570,14 @@ VBObox1.prototype.reload = function () {
     this.vboContents);   // the JS source-data array used to fill VBO
 }
 
+function setModelMatNormalMat(self) {
+  gl.uniformMatrix4fv(self.u_modelMatLoc, false, self.ModelMatrix.elements)
+
+  self.normalMat.setInverseOf(self.ModelMatrix)
+  self.normalMat.transpose()
+  gl.uniformMatrix4fv(self.u_normalMatLoc, false, self.normalMat.elements);
+
+}
 
 //=============================================================================
 //=============================================================================
