@@ -1,4 +1,78 @@
 
+var g_vboContents
+
+var g_sphere_verts
+var g_pyramide_verts
+var g_tor_verts 
+var g_cyl_verts 
+
+var g_sphere_start
+var g_pyra_start
+var g_tor_start
+var g_cyl_start
+
+var g_vboVerts
+var g_FSIZE
+var g_vboBytes
+var g_vboStride
+var g_vboFcount_a_Pos1 
+var g_vboFcount_a_Normal 
+var g_vboOffset_a_Pos1 
+var g_vboOffset_a_Normal 
+
+function initVertecies(){
+  g_sphere_verts = makeSphere()
+  g_pyramide_verts = make_pyramide_vertecies()
+  g_tor_verts = make_tor_vertecies()
+  g_cyl_verts = make_cyl_vertecies()
+
+
+  var size = g_sphere_verts.length 
+  + g_pyramide_verts.length
+  + g_tor_verts.length
+  + g_cyl_verts.length
+
+  g_vboContents = new Float32Array(size)
+
+  var i = 0						
+  g_sphere_start = i;
+  for (j = 0; j < g_sphere_verts.length; i++, j++) {
+    g_vboContents[i] = g_sphere_verts[j];
+  }
+  g_pyra_start = i;	
+  for (j = 0; j < g_pyramide_verts.length; i++, j++) {
+    g_vboContents[i] = g_pyramide_verts[j];
+  }
+  g_tor_start = i;	
+  for (j = 0; j < g_tor_verts.length; i++, j++) {
+    g_vboContents[i] = g_tor_verts[j];
+  }
+  g_cyl_start = i;	
+  for (j = 0; j < g_cyl_verts.length; i++, j++) {
+    g_vboContents[i] = g_cyl_verts[j];
+  }
+
+  g_vboVerts = g_vboContents.length / 8;							// # of vertices held in 'vboContents' array;
+  g_FSIZE = g_vboContents.BYTES_PER_ELEMENT;
+  g_vboBytes = g_vboContents.length * g_FSIZE;
+  g_vboStride = g_vboBytes / g_vboVerts;
+
+  //----------------------Attribute sizes
+  g_vboFcount_a_Pos1 = 4;   
+  g_vboFcount_a_Normal = 4;  // # of floats for this attrib (just one!)   
+  console.assert((g_vboFcount_a_Pos1 +     // check the size of each and
+    g_vboFcount_a_Normal) *   // every attribute in our VBO
+    g_FSIZE == g_vboStride, // for agreeement with'stride'
+    "Uh oh! VBObox1.vboStride disagrees with attribute-size values!");
+
+  //----------------------Attribute offsets
+  g_vboOffset_a_Pos1 = 0;    //# of bytes from START of vbo to the START
+  // of 1st a_Pos1 attrib value in vboContents[]
+  g_vboOffset_a_Normal = (g_vboFcount_a_Pos1) * g_FSIZE;
+}
+initVertecies()
+
+
 function WorldBox() {
 
   this.VERT_SRC =	//--------------------- VERTEX SHADER source code 
@@ -297,68 +371,6 @@ function VBObox1() {
     '  gl_FragColor = v_color; \n' +
     '}\n';
 
-    this.sphere_verts = makeSphere()
-    this.pyramide_verts = make_pyramide_vertecies()
-    this.tor_verts = make_tor_vertecies()
-    this.cyl_verts = make_cyl_vertecies()
-    console.log(this.tor_verts.length);
-
-    var size = this.sphere_verts.length 
-    + this.pyramide_verts.length
-    + this.tor_verts.length
-    + this.cyl_verts.length
-
-    this.vboContents = new Float32Array(size)
-
-    var i = 0						
-    this.sphere_start = i;
-    for (j = 0; j < this.sphere_verts.length; i++, j++) {
-      this.vboContents[i] = this.sphere_verts[j];
-    }
-    this.pyra_start = i;	
-    for (j = 0; j < this.pyramide_verts.length; i++, j++) {
-      this.vboContents[i] = this.pyramide_verts[j];
-    }
-    this.tor_start = i;	
-    for (j = 0; j < this.tor_verts.length; i++, j++) {
-      this.vboContents[i] = this.tor_verts[j];
-    }
-    this.cyl_start = i;	
-    for (j = 0; j < this.cyl_verts.length; i++, j++) {
-      this.vboContents[i] = this.cyl_verts[j];
-    }
-    
-    
-    //this.vboContents = makeSphere()
-  console.log(this.vboContents);
-
-  this.vboVerts = this.vboContents.length / 8;							// # of vertices held in 'vboContents' array;
-  this.FSIZE = this.vboContents.BYTES_PER_ELEMENT;
-  // bytes req'd by 1 vboContents array element;
-  // (why? used to compute stride and offset 
-  // in bytes for vertexAttribPointer() calls)
-  this.vboBytes = this.vboContents.length * this.FSIZE;
-  // (#  of floats in vboContents array) * 
-  // (# of bytes/float).
-  this.vboStride = this.vboBytes / this.vboVerts;
-  // (== # of bytes to store one complete vertex).
-  // From any attrib in a given vertex in the VBO, 
-  // move forward by 'vboStride' bytes to arrive 
-  // at the same attrib for the next vertex.
-
-  //----------------------Attribute sizes
-  this.vboFcount_a_Pos1 = 4;    // # of floats in the VBO needed to store the
-  // attribute named a_Pos1. (4: x,y,z,w values)
-  this.vboFcount_a_Normal = 4;  // # of floats for this attrib (just one!)   
-  console.assert((this.vboFcount_a_Pos1 +     // check the size of each and
-    this.vboFcount_a_Normal) *   // every attribute in our VBO
-    this.FSIZE == this.vboStride, // for agreeement with'stride'
-    "Uh oh! VBObox1.vboStride disagrees with attribute-size values!");
-
-  //----------------------Attribute offsets
-  this.vboOffset_a_Pos1 = 0;    //# of bytes from START of vbo to the START
-  // of 1st a_Pos1 attrib value in vboContents[]
-  this.vboOffset_a_Normal = (this.vboFcount_a_Pos1) * this.FSIZE;
 
   //-----------------------GPU memory locations:                                
   this.vboLoc;									// GPU Location for Vertex Buffer Object, 
@@ -409,7 +421,7 @@ VBObox1.prototype.init = function () {
     this.vboLoc);				  // the ID# the GPU uses for this buffer.
 
   gl.bufferData(gl.ARRAY_BUFFER, 			  // GLenum target(same as 'bindBuffer()')
-  this.vboContents, 		// JavaScript Float32Array
+  g_vboContents, 		// JavaScript Float32Array
     gl.STATIC_DRAW);			// Usage hint.  
 
   this.a_positionLoc = gl.getAttribLocation(this.shaderLoc, 'a_position');
@@ -462,12 +474,12 @@ VBObox1.prototype.switchToMe = function () {
   gl.bindBuffer(gl.ARRAY_BUFFER,	    // GLenum 'target' for this GPU buffer 
     this.vboLoc);			// the ID# the GPU uses for our VBO.
 
-  gl.vertexAttribPointer(this.a_positionLoc, this.vboFcount_a_Pos1,
+  gl.vertexAttribPointer(this.a_positionLoc, g_vboFcount_a_Pos1,
     gl.FLOAT, false,
-    this.vboStride, this.vboOffset_a_Pos1);
-  gl.vertexAttribPointer(this.a_normalLoc, this.vboFcount_a_Normal,
+    g_vboStride, g_vboOffset_a_Pos1);
+  gl.vertexAttribPointer(this.a_normalLoc, g_vboFcount_a_Normal,
     gl.FLOAT, false,
-    this.vboStride, this.vboOffset_a_Normal);
+    g_vboStride, g_vboOffset_a_Normal);
 
   gl.enableVertexAttribArray(this.a_positionLoc);
   gl.enableVertexAttribArray(this.a_normalLoc);
@@ -501,7 +513,7 @@ VBObox1.prototype.adjust = function () {
       '.adjust() call you needed to call this.switchToMe()!!');
   }
 
-  gl.uniform1i(this.u_lightModeLoc, 0)
+  gl.uniform1i(this.u_lightModeLoc, g_light_mode)
   gl.uniform3f(this.u_eyePosWorldLoc, g_eye_point_v[0], g_eye_point_v[1], g_eye_point_v[2]);
   
   this.lamp0.I_pos.elements.set( [6.0, 5.0, 5.0]);
@@ -534,27 +546,7 @@ VBObox1.prototype.draw = function () {
     console.log('ERROR! before' + this.constructor.name +
       '.draw() call you needed to call this.switchToMe()!!');
   }
-  this.ModelMatrix.setTranslate( 0,0, 0);
-  this.ModelMatrix.rotate(g_angleNow0, 0, 0, 1);
-  setModelMatNormalMat(this)
-  gl.drawArrays(gl.TRIANGLE_STRIP, this.sphere_start, this.sphere_verts.length / 8)
-
-  this.ModelMatrix.setTranslate( 0,-3, 0);
-  this.ModelMatrix.rotate(g_angleNow0, 0, 0, 1);
-  setModelMatNormalMat(this)
-  gl.drawArrays(gl.TRIANGLES, this.pyra_start / 8, this.pyramide_verts.length / 8)
-
-
-  this.ModelMatrix.setTranslate( 0,3, 0);
-  this.ModelMatrix.rotate(g_angleNow0, 0, 0, 1);
-  setModelMatNormalMat(this)
-  gl.drawArrays(gl.TRIANGLE_STRIP, this.tor_start / 8, this.tor_verts.length / 8 )
-
-  
-  this.ModelMatrix.setTranslate( -3,0, 0);
-  this.ModelMatrix.rotate(g_angleNow0, 0, 0, 1);
-  setModelMatNormalMat(this)
-  gl.drawArrays(gl.TRIANGLE_STRIP, this.cyl_start / 8, this.cyl_verts.length / 8 )
+  drawAllObjs(this)
 }
 
 
@@ -567,7 +559,7 @@ VBObox1.prototype.reload = function () {
   gl.bufferSubData(gl.ARRAY_BUFFER, 	// GLenum target(same as 'bindBuffer()')
     0,                  // byte offset to where data replacement
     // begins in the VBO.
-    this.vboContents);   // the JS source-data array used to fill VBO
+    g_vboContents);   // the JS source-data array used to fill VBO
 }
 
 function setModelMatNormalMat(self) {
@@ -687,35 +679,7 @@ function VBObox2() {
 
   '}\n';
 */
-  this.vboContents = makeSphere()
-
-  this.vboVerts = this.vboContents.length / 8;							// # of vertices held in 'vboContents' array;
-  this.FSIZE = this.vboContents.BYTES_PER_ELEMENT;
-  // bytes req'd by 1 vboContents array element;
-  // (why? used to compute stride and offset 
-  // in bytes for vertexAttribPointer() calls)
-  this.vboBytes = this.vboContents.length * this.FSIZE;
-  // (#  of floats in vboContents array) * 
-  // (# of bytes/float).
-  this.vboStride = this.vboBytes / this.vboVerts;
-  // (== # of bytes to store one complete vertex).
-  // From any attrib in a given vertex in the VBO, 
-  // move forward by 'vboStride' bytes to arrive 
-  // at the same attrib for the next vertex.
-
-  //----------------------Attribute sizes
-  this.vboFcount_a_Pos1 = 4;    // # of floats in the VBO needed to store the
-  this.vboFcount_a_Normal = 4;  // # of floats for this attrib (just one!)   
-  console.assert((this.vboFcount_a_Pos1 +     // check the size of each and
-    this.vboFcount_a_Normal) *   // every attribute in our VBO
-    this.FSIZE == this.vboStride, // for agreeement with'stride'
-    "Uh oh! VBObox1.vboStride disagrees with attribute-size values!");
-
-  //----------------------Attribute offsets
-  this.vboOffset_a_Pos1 = 0;    //# of bytes from START of vbo to the START
-  // of 1st a_Pos1 attrib value in vboContents[]
-  this.vboOffset_a_Normal = (this.vboFcount_a_Pos1) * this.FSIZE;
-
+  
 
   //-----------------------GPU memory locations:                                
   this.vboLoc;									// GPU Location for Vertex Buffer Object, 
@@ -770,7 +734,7 @@ VBObox2.prototype.init = function () {
     this.vboLoc);				  // the ID# the GPU uses for this buffer.
 
   gl.bufferData(gl.ARRAY_BUFFER, 			  // GLenum target(same as 'bindBuffer()')
-  this.vboContents, 		// JavaScript Float32Array
+  g_vboContents, 		// JavaScript Float32Array
     gl.STATIC_DRAW);			// Usage hint.  
 
 
@@ -824,12 +788,12 @@ VBObox2.prototype.switchToMe = function () {
   gl.bindBuffer(gl.ARRAY_BUFFER,	    // GLenum 'target' for this GPU buffer 
     this.vboLoc);			// the ID# the GPU uses for our VBO.
 
-  gl.vertexAttribPointer(this.a_positionLoc, this.vboFcount_a_Pos1,
+  gl.vertexAttribPointer(this.a_positionLoc, g_vboFcount_a_Pos1,
     gl.FLOAT, false,
-    this.vboStride, this.vboOffset_a_Pos1);
-  gl.vertexAttribPointer(this.a_normalLoc, this.vboFcount_a_Normal,
+    g_vboStride, g_vboOffset_a_Pos1);
+  gl.vertexAttribPointer(this.a_normalLoc, g_vboFcount_a_Normal,
     gl.FLOAT, false,
-    this.vboStride, this.vboOffset_a_Normal);
+    g_vboStride, g_vboOffset_a_Normal);
 
   gl.enableVertexAttribArray(this.a_positionLoc);
   gl.enableVertexAttribArray(this.a_normalLoc);
@@ -863,7 +827,7 @@ VBObox2.prototype.adjust = function () {
 
   //  gl.uniform3f(this.u_LightColorLoc, 0.8, 0.8, 0.8);
   // Set the light direction (in the world coordinate)
-  gl.uniform1i(this.u_lightModeLoc, 0)
+  gl.uniform1i(this.u_lightModeLoc, g_light_mode)
   gl.uniform3f(this.u_eyePosWorldLoc, g_eye_point_v[0], g_eye_point_v[1], g_eye_point_v[2]);
 
   this.lamp0.I_pos.elements.set( [6.0, 5.0, 5.0]);
@@ -886,19 +850,9 @@ VBObox2.prototype.adjust = function () {
 
 
 
-  this.ModelMatrix.setTranslate( 0, 0, 0);
-  this.ModelMatrix.rotate(g_angleNow0, 0, 0, 1);
-  gl.uniformMatrix4fv(this.u_modelMatLoc, false, this.ModelMatrix.elements)
-
-  
   var pvMat = new Matrix4()
   pvMat.set(g_projMatrix).multiply(g_viewMatrix)
   gl.uniformMatrix4fv(this.u_pvMatLoc, false, pvMat.elements);
-
-  this.normalMat.setInverseOf(this.ModelMatrix)
-  this.normalMat.transpose()
-  gl.uniformMatrix4fv(this.u_normalMatLoc, false, this.normalMat.elements);
-
   this.reload()
 }
 
@@ -907,8 +861,7 @@ VBObox2.prototype.draw = function () {
     console.log('ERROR! before' + this.constructor.name +
       '.draw() call you needed to call this.switchToMe()!!');
   }
-
-  gl.drawArrays(gl.TRIANGLE_STRIP, 0, this.vboVerts)
+  drawAllObjs(this)
 }
 
 VBObox2.prototype.reload = function () {
@@ -920,39 +873,30 @@ VBObox2.prototype.reload = function () {
   gl.bufferSubData(gl.ARRAY_BUFFER, 	// GLenum target(same as 'bindBuffer()')
     0,                  // byte offset to where data replacement
     // begins in the VBO.
-    this.vboContents);   // the JS source-data array used to fill VBO
-}
-/*
-VBObox2.prototype.empty = function() {
-//=============================================================================
-// Remove/release all GPU resources used by this VBObox object, including any
-// shader programs, attributes, uniforms, textures, samplers or other claims on
-// GPU memory.  However, make sure this step is reversible by a call to
-// 'restoreMe()': be sure to retain all our Float32Array data, all values for
-// uniforms, all stride and offset values, etc.
-//
-//
-// 		********   YOU WRITE THIS! ********
-//
-//
-//
+    g_vboContents);   // the JS source-data array used to fill VBO
 }
 
-VBObox2.prototype.restore = function() {
-//=============================================================================
-// Replace/restore all GPU resources used by this VBObox object, including any
-// shader programs, attributes, uniforms, textures, samplers or other claims on
-// GPU memory.  Use our retained Float32Array data, all values for  uniforms,
-// all stride and offset values, etc.
-//
-//
-// 		********   YOU WRITE THIS! ********
-//
-//
-//
-}
-*/
 
-//=============================================================================
-//=============================================================================
-//=============================================================================
+function drawAllObjs(self) {
+  self.ModelMatrix.setTranslate( 0,0, 0);
+  self.ModelMatrix.rotate(g_angleNow0, 0, 0, 1);
+  setModelMatNormalMat(self)
+  gl.drawArrays(gl.TRIANGLE_STRIP, g_sphere_start, g_sphere_verts.length / 8)
+
+  self.ModelMatrix.setTranslate( 0,-3, 0);
+  self.ModelMatrix.rotate(g_angleNow0, 0, 0, 1);
+  setModelMatNormalMat(self)
+  gl.drawArrays(gl.TRIANGLES, g_pyra_start / 8, g_pyramide_verts.length / 8)
+
+
+  self.ModelMatrix.setTranslate( 0,3, 0);
+  self.ModelMatrix.rotate(g_angleNow0, 0, 0, 1);
+  setModelMatNormalMat(self)
+  gl.drawArrays(gl.TRIANGLE_STRIP, g_tor_start / 8, g_tor_verts.length / 8 )
+
+  
+  self.ModelMatrix.setTranslate( -3,0, 0);
+  self.ModelMatrix.rotate(g_angleNow0, 0, 0, 1);
+  setModelMatNormalMat(self)
+  gl.drawArrays(gl.TRIANGLE_STRIP, g_cyl_start / 8, g_cyl_verts.length / 8 )
+}

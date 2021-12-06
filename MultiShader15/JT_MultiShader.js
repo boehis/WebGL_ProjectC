@@ -30,6 +30,8 @@ var g_tilt_v = 0.01;
 
 var key_codes = []
 
+var g_light_mode = 1
+
 //--------------------------------------
 
 // For animation:---------------------
@@ -67,25 +69,10 @@ var g_show1 = 1;								// 	"					"			VBO1		"				"				"
 var g_show2 = 0;                //  "         "     VBO2    "       "       "
 
 function main() {
-//=============================================================================
-  // Retrieve the HTML-5 <canvas> element where webGL will draw our pictures:
-  g_canvasID = document.getElementById('webgl');	
-  // Create the the WebGL rendering context: one giant JavaScript object that
-  // contains the WebGL state machine adjusted by large sets of WebGL functions,
-  // built-in variables & parameters, and member data. Every WebGL function call
-  // will follow this format:  gl.WebGLfunctionName(args);
 
-  // Create the the WebGL rendering context: one giant JavaScript object that
-  // contains the WebGL state machine, adjusted by big sets of WebGL functions,
-  // built-in variables & parameters, and member data. Every WebGL func. call
-  // will follow this format:  gl.WebGLfunctionName(args);
-  //SIMPLE VERSION:  gl = getWebGLContext(g_canvasID); 
-  // Here's a BETTER version:
+  g_canvasID = document.getElementById('webgl');	
+
   gl = g_canvasID.getContext("webgl", { preserveDrawingBuffer: true});
-	// This fancier-looking version disables HTML-5's default screen-clearing, so 
-	// that our drawMain() 
-	// function will over-write previous on-screen results until we call the 
-	// gl.clear(COLOR_BUFFER_BIT); function. )
   if (!gl) {
     console.log('Failed to get the rendering context for WebGL');
     return;
@@ -131,6 +118,11 @@ function main() {
     };
   //------------------------------------
   tick();                       // do it again!
+
+  // WINDOW:
+  window.addEventListener('resize', resizeCanvas, false);
+	resizeCanvas();
+
 
   	//KEY:
 	window.addEventListener("keydown", myKeyDown, false);
@@ -343,6 +335,24 @@ function VBO2toggle() {
   console.log('g_show2: '+g_show2);
 }
 
+function lightSelectChange() {
+  var light = document.getElementById("light").value;
+  if(light == "phong-light"){
+    g_light_mode = 1
+  }else {
+    g_light_mode = 0
+  }
+}
+function shadingSelectChange() {
+  var shadeing = document.getElementById("shading").value;
+  if(shadeing == "gouraud-shading"){
+    g_show1 = 1
+    g_show2 = 0
+  }else {
+    g_show1 = 0
+    g_show2 = 1
+  }
+}
 
 function myKeyDown(key) {
 	if(key_codes.indexOf(key.code) == -1) {
@@ -371,4 +381,8 @@ function unitify(a) {
 		a[1]*len,
 		a[2]*len
 	]
+}
+function resizeCanvas() {
+	g_canvasID.width = g_canvasID.clientWidth;
+	g_canvasID.height = g_canvasID.clientHeight;
 }

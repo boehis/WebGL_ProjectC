@@ -1,30 +1,50 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <title>JT_Multi-Shader</title>
-  </head>
+
+<head>
+  <meta charset="utf-8" />
+  <title>JT_Multi-Shader</title>
+  <link rel="stylesheet" href="main.css">
+</head>
+
+<body onload="main()">
 
   <body onload="main()">
-    <canvas id="webgl" width="600" height="600">
-    Please use a browser that supports "canvas"
+    <canvas id="webgl">
+      Please use a browser that supports "canvas"
     </canvas>
     <p>
-      <button type="button" onclick="VBO0toggle()">VBO-0 hide/show</button>
-      <button type="button" onclick="VBO1toggle()">VBO-1 hide/show</button>
-      <button type="button" onclick="VBO2toggle()">VBO-2 hide/show</button>
-    </p>
+
+    <div id="controls">
+      <h4>Controls:</h4>
+      <p>Use keys ←→ ↑↓ to move forward, back, left and right</p>
+      <p>Use keys W, S, A, D to look up,down,left and right </p>
+      <p>Use keys O,I to look move up and down in the z vertically </p>
+
+      <label for="light">Choose a Lighting mode:</label>
+      <select name="light" id="light" onchange="lightSelectChange()">
+        <option value="phong-light">Phong</option>
+        <option value="blinnphong-light">Blinn-Phong</option>
+      </select>
+      </br>
+      <label for="shading">Choose a Shading mode:</label>
+      <select name="shading" id="shading" onchange="shadingSelectChange()">
+        <option value="gouraud-shading">Gouraud Shading</option>
+        <option value="phong-shading">Phong Shading</option>
+      </select>
+
+      <!-- <p>Frog Flex Angle</p>
+        <input class="slider" type="range" min="1" max="50" value="20" oninput="frogFlexAngle(this.value)">
+   -->
+    </div>
+
     <script src="../lib/webgl-utils.js"></script>
     <script src="../lib/webgl-debug.js"></script>
     <script src="../lib/cuon-utils.js"></script>
     <script src="../lib/cuon-matrix-quat03.js"></script>
-<!-- YOU SHOULD UPGRADE to Brandon Jones' far-faster, 
-      far more complete vector/matrix/quaternion library: (Google it!)
-		<script src="../lib/glmatrix.js"></script>
---> 
-    
-		<script src="materials_Ayerdi.js"></script>
-		<script src="lights-JT.js"></script>
+
+    <script src="materials_Ayerdi.js"></script>
+    <script src="lights-JT.js"></script>
     <script src="functions.js"></script>
     <script src="frog_vertecies.js"></script>
     <script src="ground_vertecies.js"></script>
@@ -35,8 +55,9 @@
     <script src="sphere_vertecies.js"></script>
     <script src="torus_vertecies.js"></script>
     <script src="pyramide_vertecies.js"></script>
-    
-		<script src="JT_VBObox-Lib.js"></script>
+
+    <script src="JT_VBObox-Lib.js"></script>
     <script src="JT_MultiShader.js"></script>
   </body>
+
 </html>
