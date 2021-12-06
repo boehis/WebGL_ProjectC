@@ -516,11 +516,8 @@ VBObox1.prototype.adjust = function () {
   gl.uniform1i(this.u_lightModeLoc, g_light_mode)
   gl.uniform3f(this.u_eyePosWorldLoc, g_eye_point_v[0], g_eye_point_v[1], g_eye_point_v[2]);
 
-  this.lamp0.I_pos.elements.set([6.0, 5.0, 5.0]);
-  this.lamp0.I_ambi.elements.set([0.4, 0.4, 0.4]);
-  this.lamp0.I_diff.elements.set([1.0, 1.0, 1.0]);
-  this.lamp0.I_spec.elements.set([1.0, 1.0, 1.0]);
 
+  setLamp(this)
 
   gl.uniform3fv(this.lamp0.u_pos, this.lamp0.I_pos.elements.slice(0, 3));
   gl.uniform3fv(this.lamp0.u_ambi, this.lamp0.I_ambi.elements);		// ambient
@@ -822,10 +819,7 @@ VBObox2.prototype.adjust = function () {
   gl.uniform1i(this.u_lightModeLoc, g_light_mode)
   gl.uniform3f(this.u_eyePosWorldLoc, g_eye_point_v[0], g_eye_point_v[1], g_eye_point_v[2]);
 
-  this.lamp0.I_pos.elements.set([6.0, 5.0, 5.0]);
-  this.lamp0.I_ambi.elements.set([0.4, 0.4, 0.4]);
-  this.lamp0.I_diff.elements.set([1.0, 1.0, 1.0]);
-  this.lamp0.I_spec.elements.set([1.0, 1.0, 1.0]);
+  setLamp(this)
 
   gl.uniform3fv(this.lamp0.u_pos, this.lamp0.I_pos.elements.slice(0, 3));
   gl.uniform3fv(this.lamp0.u_ambi, this.lamp0.I_ambi.elements);		// ambient
@@ -856,6 +850,20 @@ VBObox2.prototype.reload = function () {
     0,                  // byte offset to where data replacement
     // begins in the VBO.
     g_vboContents);   // the JS source-data array used to fill VBO
+}
+
+function setLamp(self) {
+  if(g_light_enabled) {
+    self.lamp0.I_pos.elements.set(lamp0pos);
+    self.lamp0.I_ambi.elements.set(lamp0ambi);
+    self.lamp0.I_diff.elements.set(lamp0diff);
+    self.lamp0.I_spec.elements.set(lamp0spec);
+  } else {
+    self.lamp0.I_pos.elements.set([0,0,0]);
+    self.lamp0.I_ambi.elements.set([0,0,0]);
+    self.lamp0.I_diff.elements.set([0,0,0]);
+    self.lamp0.I_spec.elements.set([0,0,0]);
+  }
 }
 
 function setMat(self, mat) {

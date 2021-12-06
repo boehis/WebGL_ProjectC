@@ -32,6 +32,11 @@ var key_codes = []
 var g_matlSel = 1
 
 var g_light_mode = 1
+var g_light_enabled = true
+var lamp0pos = [6.0, 5.0, 5.0];
+var lamp0ambi = [0.4, 0.4, 0.4];
+var lamp0diff = [1.0, 1.0, 1.0];
+var lamp0spec = [1.0, 1.0, 1.0];
 
 //--------------------------------------
 
@@ -413,4 +418,21 @@ function unitify(a) {
 function resizeCanvas() {
   g_canvasID.width = g_canvasID.clientWidth;
   g_canvasID.height = g_canvasID.clientHeight;
+}
+
+function lightSwitch(value) {
+  g_light_enabled = value
+}
+
+function sliderP(value, index) {
+  lamp0pos[index] = value - 10 
+}
+function sliderA(value, index) {
+  lamp0ambi[index] = value / 255.0
+}
+function sliderD(value, index) {
+  lamp0diff[index] = value / 255.0
+}
+function sliderS(value, index) {
+  lamp0spec[index] = value / 255.0
 }
