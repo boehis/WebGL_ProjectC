@@ -3,8 +3,8 @@ var g_vboContents
 
 var g_sphere_verts
 var g_pyramide_verts
-var g_tor_verts 
-var g_cyl_verts 
+var g_tor_verts
+var g_cyl_verts
 
 var g_sphere_start
 var g_pyra_start
@@ -15,39 +15,39 @@ var g_vboVerts
 var g_FSIZE
 var g_vboBytes
 var g_vboStride
-var g_vboFcount_a_Pos1 
-var g_vboFcount_a_Normal 
-var g_vboOffset_a_Pos1 
-var g_vboOffset_a_Normal 
+var g_vboFcount_a_Pos1
+var g_vboFcount_a_Normal
+var g_vboOffset_a_Pos1
+var g_vboOffset_a_Normal
 
-function initVertecies(){
+function initVertecies() {
   g_sphere_verts = makeSphere()
   g_pyramide_verts = make_pyramide_vertecies()
   g_tor_verts = make_tor_vertecies()
   g_cyl_verts = make_cyl_vertecies()
 
 
-  var size = g_sphere_verts.length 
-  + g_pyramide_verts.length
-  + g_tor_verts.length
-  + g_cyl_verts.length
+  var size = g_sphere_verts.length
+    + g_pyramide_verts.length
+    + g_tor_verts.length
+    + g_cyl_verts.length
 
   g_vboContents = new Float32Array(size)
 
-  var i = 0						
+  var i = 0
   g_sphere_start = i;
   for (j = 0; j < g_sphere_verts.length; i++, j++) {
     g_vboContents[i] = g_sphere_verts[j];
   }
-  g_pyra_start = i;	
+  g_pyra_start = i;
   for (j = 0; j < g_pyramide_verts.length; i++, j++) {
     g_vboContents[i] = g_pyramide_verts[j];
   }
-  g_tor_start = i;	
+  g_tor_start = i;
   for (j = 0; j < g_tor_verts.length; i++, j++) {
     g_vboContents[i] = g_tor_verts[j];
   }
-  g_cyl_start = i;	
+  g_cyl_start = i;
   for (j = 0; j < g_cyl_verts.length; i++, j++) {
     g_vboContents[i] = g_cyl_verts[j];
   }
@@ -58,7 +58,7 @@ function initVertecies(){
   g_vboStride = g_vboBytes / g_vboVerts;
 
   //----------------------Attribute sizes
-  g_vboFcount_a_Pos1 = 4;   
+  g_vboFcount_a_Pos1 = 4;
   g_vboFcount_a_Normal = 4;  // # of floats for this attrib (just one!)   
   console.assert((g_vboFcount_a_Pos1 +     // check the size of each and
     g_vboFcount_a_Normal) *   // every attribute in our VBO
@@ -163,7 +163,7 @@ WorldBox.prototype.init = function () {
     this.vboLoc);				  // the ID# the GPU uses for this buffer.
 
   gl.bufferData(gl.ARRAY_BUFFER, 			  // GLenum target(same as 'bindBuffer()')
-  this.vboContents, 		// JavaScript Float32Array
+    this.vboContents, 		// JavaScript Float32Array
     gl.STATIC_DRAW);			// Usage hint.
 
   this.a_PosLoc = gl.getAttribLocation(this.shaderLoc, 'a_Pos0');
@@ -304,7 +304,7 @@ function VBObox1() {
 
     'struct LampT {\n' +		// Describes one point-like Phong light source
     '		vec3 pos;\n' +			// (x,y,z,w); w==1.0 for local light at x,y,z position
-                            //		   w==0.0 for distant light from x,y,z direction 
+    //		   w==0.0 for distant light from x,y,z direction 
     ' 	vec3 ambi;\n' +			// Ia ==  ambient light source strength (r,g,b)
     ' 	vec3 diff;\n' +			// Id ==  diffuse light source strength (r,g,b)
     '		vec3 spec;\n' +			// Is == specular light source strength (r,g,b)
@@ -323,14 +323,14 @@ function VBObox1() {
     'attribute vec4 a_normal; \n' +
 
     'uniform LampT u_LampSet[1];\n' +		// Array of all light sources.
-	  'uniform MatlT u_MatlSet[1];\n' +		// Array of all materials.
-	
+    'uniform MatlT u_MatlSet[1];\n' +		// Array of all materials.
+
 
     'uniform mat4 u_pvMat, u_modelMat, u_normalMat; \n' +
     'uniform int u_lightMode;    \n' +
-    
+
     'uniform vec3 u_eyePosWorld; \n' + 	// Camera/eye location in world coords.
-    
+
     'varying vec4 v_color;  \n' +
 
     'void main(){ \n' +
@@ -339,13 +339,13 @@ function VBObox1() {
     '  vec3 normal = normalize(vec3(u_normalMat * a_normal));\n' +
     '  vec3 lightDirection = normalize(u_LampSet[0].pos - vertexPosition.xyz);\n' +
     '  vec3 eyeDirection = normalize(u_eyePosWorld - vertexPosition.xyz); \n' +
-    
+
     '  float nDotL = max(dot(lightDirection, normal), 0.0);\n' +
-    
+
     '  float specular = 0.0; \n' +
     '  if(u_lightMode == 0) { \n' +
     '    vec3 H = normalize(lightDirection + eyeDirection); \n' +
-  	'    float nDotH = max(dot(H, normal), 0.0); \n' +
+    '    float nDotH = max(dot(H, normal), 0.0); \n' +
     '    specular = pow(nDotH, float(u_MatlSet[0].shiny)); \n' +
     '  } else { \n' +
     '    vec3 R = reflect(lightDirection, normal);      // Reflected light vector \n' +
@@ -353,13 +353,13 @@ function VBObox1() {
     '    float specAngle = max(dot(-R, V), 0.0); \n' +
     '    specular = pow(specAngle, float(u_MatlSet[0].shiny)); \n' +
     '  } \n' +
-    
+
     '	 vec3 emissive = 										u_MatlSet[0].emit;' +
     '  vec3 ambient = u_LampSet[0].ambi * u_MatlSet[0].ambi;\n' +
     '  vec3 diffuse = u_LampSet[0].diff * u_MatlSet[0].diff * nDotL;\n' +
     '	 vec3 speculr = u_LampSet[0].spec * u_MatlSet[0].spec * specular;\n' +
     '  v_color = vec4(emissive + ambient + diffuse + speculr , 1.0);\n' +
-    
+
     '  gl_Position = u_pvMat * vertexPosition; \n' +
     '} \n'
 
@@ -394,8 +394,8 @@ function VBObox1() {
 
   this.lamp0 = new LightsT();
 
-  this.matlSel= MATL_RED_PLASTIC;				// see keypress(): 'm' key changes matlSel
-  this.matl0 = new Material(this.matlSel);	
+  this.matlSel = MATL_RED_PLASTIC;				// see keypress(): 'm' key changes matlSel
+  this.matl0 = new Material(this.matlSel);
 };
 
 
@@ -407,7 +407,7 @@ VBObox1.prototype.init = function () {
       '.init() failed to create executable Shaders on the GPU. Bye!');
     return;
   }
-  
+
   gl.program = this.shaderLoc;		// (to match cuon-utils.js -- initShaders())
 
   this.vboLoc = gl.createBuffer();
@@ -421,7 +421,7 @@ VBObox1.prototype.init = function () {
     this.vboLoc);				  // the ID# the GPU uses for this buffer.
 
   gl.bufferData(gl.ARRAY_BUFFER, 			  // GLenum target(same as 'bindBuffer()')
-  g_vboContents, 		// JavaScript Float32Array
+    g_vboContents, 		// JavaScript Float32Array
     gl.STATIC_DRAW);			// Usage hint.  
 
   this.a_positionLoc = gl.getAttribLocation(this.shaderLoc, 'a_position');
@@ -445,26 +445,26 @@ VBObox1.prototype.init = function () {
     //return;
   }
 
-  this.lamp0.u_pos  = gl.getUniformLocation(gl.program, 'u_LampSet[0].pos');	
+  this.lamp0.u_pos = gl.getUniformLocation(gl.program, 'u_LampSet[0].pos');
   this.lamp0.u_ambi = gl.getUniformLocation(gl.program, 'u_LampSet[0].ambi');
   this.lamp0.u_diff = gl.getUniformLocation(gl.program, 'u_LampSet[0].diff');
   this.lamp0.u_spec = gl.getUniformLocation(gl.program, 'u_LampSet[0].spec');
-  if( !this.lamp0.u_pos || !this.lamp0.u_ambi	|| !this.lamp0.u_diff || !this.lamp0.u_spec	) {
+  if (!this.lamp0.u_pos || !this.lamp0.u_ambi || !this.lamp0.u_diff || !this.lamp0.u_spec) {
     console.log('Failed to get GPUs Lamp0 storage locations');
     return;
   }
 
   this.matl0.uLoc_Ke = gl.getUniformLocation(gl.program, 'u_MatlSet[0].emit');
-	this.matl0.uLoc_Ka = gl.getUniformLocation(gl.program, 'u_MatlSet[0].ambi');
-	this.matl0.uLoc_Kd = gl.getUniformLocation(gl.program, 'u_MatlSet[0].diff');
-	this.matl0.uLoc_Ks = gl.getUniformLocation(gl.program, 'u_MatlSet[0].spec');
-	this.matl0.uLoc_Kshiny = gl.getUniformLocation(gl.program, 'u_MatlSet[0].shiny');
-	if(!this.matl0.uLoc_Ke || !this.matl0.uLoc_Ka || !this.matl0.uLoc_Kd 
-			  	  		    || !this.matl0.uLoc_Ks || !this.matl0.uLoc_Kshiny
-		 ) {
-		console.log('Failed to get GPUs Reflectance storage locations');
-		return;
-	}
+  this.matl0.uLoc_Ka = gl.getUniformLocation(gl.program, 'u_MatlSet[0].ambi');
+  this.matl0.uLoc_Kd = gl.getUniformLocation(gl.program, 'u_MatlSet[0].diff');
+  this.matl0.uLoc_Ks = gl.getUniformLocation(gl.program, 'u_MatlSet[0].spec');
+  this.matl0.uLoc_Kshiny = gl.getUniformLocation(gl.program, 'u_MatlSet[0].shiny');
+  if (!this.matl0.uLoc_Ke || !this.matl0.uLoc_Ka || !this.matl0.uLoc_Kd
+    || !this.matl0.uLoc_Ks || !this.matl0.uLoc_Kshiny
+  ) {
+    console.log('Failed to get GPUs Reflectance storage locations');
+    return;
+  }
 
 }
 
@@ -515,26 +515,18 @@ VBObox1.prototype.adjust = function () {
 
   gl.uniform1i(this.u_lightModeLoc, g_light_mode)
   gl.uniform3f(this.u_eyePosWorldLoc, g_eye_point_v[0], g_eye_point_v[1], g_eye_point_v[2]);
-  
-  this.lamp0.I_pos.elements.set( [6.0, 5.0, 5.0]);
+
+  this.lamp0.I_pos.elements.set([6.0, 5.0, 5.0]);
   this.lamp0.I_ambi.elements.set([0.4, 0.4, 0.4]);
   this.lamp0.I_diff.elements.set([1.0, 1.0, 1.0]);
   this.lamp0.I_spec.elements.set([1.0, 1.0, 1.0]);
 
 
-  gl.uniform3fv(this.lamp0.u_pos,  this.lamp0.I_pos.elements.slice(0,3));
+  gl.uniform3fv(this.lamp0.u_pos, this.lamp0.I_pos.elements.slice(0, 3));
   gl.uniform3fv(this.lamp0.u_ambi, this.lamp0.I_ambi.elements);		// ambient
   gl.uniform3fv(this.lamp0.u_diff, this.lamp0.I_diff.elements);		// diffuse
   gl.uniform3fv(this.lamp0.u_spec, this.lamp0.I_spec.elements);		// Specular
 
-	//---------------For the Material object(s):
-	gl.uniform3fv(this.matl0.uLoc_Ke, this.matl0.K_emit.slice(0,3));				// Ke emissive
-	gl.uniform3fv(this.matl0.uLoc_Ka, this.matl0.K_ambi.slice(0,3));				// Ka ambient
-  gl.uniform3fv(this.matl0.uLoc_Kd, this.matl0.K_diff.slice(0,3));				// Kd	diffuse
-	gl.uniform3fv(this.matl0.uLoc_Ks, this.matl0.K_spec.slice(0,3));				// Ks specular
-	gl.uniform1i(this.matl0.uLoc_Kshiny, parseInt(this.matl0.K_shiny, 10));     // Kshiny 
-
-  
   var pvMat = new Matrix4()
   pvMat.set(g_projMatrix).multiply(g_viewMatrix)
   gl.uniformMatrix4fv(this.u_pvMatLoc, false, pvMat.elements);
@@ -574,12 +566,12 @@ function setModelMatNormalMat(self) {
 //=============================================================================
 //=============================================================================
 function VBObox2() {
-  
+
   this.VERT_SRC =	//--------------------- VERTEX SHADER source code 
     'precision highp float;\n' +				// req'd in OpenGL ES if we use 'float'
     //
     //--------------- GLSL Struct Definitions:
-    
+
     'struct MatlT {\n' +		// Describes one Phong material by its reflectances:
     '		vec3 emit;\n' +			// Ke: emissive -- surface 'glow' amount (r,g,b);
     '		vec3 ambi;\n' +			// Ka: ambient reflectance (r,g,b)
@@ -590,27 +582,27 @@ function VBObox2() {
 
     'attribute vec4 a_position; \n' +
     'attribute vec4 a_normal; \n' +
-  
+
     'uniform MatlT u_MatlSet[1];\n' +		// Array of all materials.
-  
+
     'uniform mat4 u_pvMat, u_modelMat, u_normalMat; \n' +
-    
+
     'varying vec4 v_color;  \n' +
     'varying vec3 v_Kd;  \n' +
     'varying vec4 v_Position;  \n' +
     'varying vec3 v_Normal;  \n' +
-    
+
     'void main(){ \n' +
     '  gl_Position = u_pvMat * u_modelMat * a_position;\n' +
     '  v_Position = u_modelMat * a_position; \n' +
-	  '  v_Normal = normalize(vec3(u_normalMat * a_normal));\n' +
-	  //'	 v_Kd = u_Kd; \n' +		// find per-pixel diffuse reflectance from per-vertex
-	  '	 v_Kd = u_MatlSet[0].diff; \n' +
+    '  v_Normal = normalize(vec3(u_normalMat * a_normal));\n' +
+    //'	 v_Kd = u_Kd; \n' +		// find per-pixel diffuse reflectance from per-vertex
+    '	 v_Kd = u_MatlSet[0].diff; \n' +
     '	 v_color = vec4(1.0,1.0,1.0,1.0); \n' +		// find per-pixel diffuse reflectance from per-vertex
     '} \n'
-    
-    // SHADED, sphere-like dots:
-    this.FRAG_SRC = 
+
+  // SHADED, sphere-like dots:
+  this.FRAG_SRC =
     'precision highp float;\n' +
     'precision highp int;\n' +
     //
@@ -630,17 +622,17 @@ function VBObox2() {
     '		vec3 spec;\n' + 		// Ks: specular reflectance (r,g,b)
     '		int shiny;\n' +			// Kshiny: specular exponent (integer >= 1; typ. <200)
     '		};\n' +
-    
+
     'uniform LampT u_LampSet[1];\n' +		// Array of all light sources.
     'uniform MatlT u_MatlSet[1];\n' +		// Array of all materials.
-    
+
     'uniform vec3 u_eyePosWorld; \n' + 	// Camera/eye location in world coords.
     'uniform int u_lightMode;    \n' +
-    
+
     'varying vec3 v_Normal;\n' +				// Find 3D surface normal at each pix
     'varying vec4 v_Position;\n' +			// pixel's 3D pos too -- in 'world' coords
     'varying vec3 v_Kd;	\n' +						// Find diffuse reflectance K_d per pix
-    
+
     'varying vec4 v_color;\n' +
     'void main() {\n' +
     '  vec3 normal = normalize(v_Normal); \n' +
@@ -648,12 +640,12 @@ function VBObox2() {
     '  vec3 eyeDirection = normalize(u_eyePosWorld - v_Position.xyz); \n' +
 
     '  float nDotL = max(dot(lightDirection, normal), 0.0); \n' +
-    
+
 
     '  float specular = 0.0; \n' +
     '  if(u_lightMode == 0) { \n' +
     '    vec3 H = normalize(lightDirection + eyeDirection); \n' +
-  	'    float nDotH = max(dot(H, normal), 0.0); \n' +
+    '    float nDotH = max(dot(H, normal), 0.0); \n' +
     '    specular = pow(nDotH, float(u_MatlSet[0].shiny)); \n' +
     '  } else { \n' +
     '    vec3 R = reflect(lightDirection, normal);      // Reflected light vector \n' +
@@ -669,17 +661,17 @@ function VBObox2() {
     '  gl_FragColor = vec4(emissive + ambient + diffuse + speculr , 1.0);\n' +
     '}\n';
 
-/*
-  // SHADED, sphere-like dots:
-  this.FRAG_SRC = //---------------------- FRAGMENT SHADER source code 
+  /*
+    // SHADED, sphere-like dots:
+    this.FRAG_SRC = //---------------------- FRAGMENT SHADER source code 
+    
+    'void main() { \n' +
+          // Normalize! !!IMPORTANT!! TROUBLE if you don't! 
+          // normals interpolated for each pixel aren't 1.0 in length any more!
   
-  'void main() { \n' +
-     	// Normalize! !!IMPORTANT!! TROUBLE if you don't! 
-     	// normals interpolated for each pixel aren't 1.0 in length any more!
+    '}\n';
+  */
 
-  '}\n';
-*/
-  
 
   //-----------------------GPU memory locations:                                
   this.vboLoc;									// GPU Location for Vertex Buffer Object, 
@@ -704,8 +696,8 @@ function VBObox2() {
 
   this.lamp0 = new LightsT();
 
-  this.matlSel= MATL_RED_PLASTIC;				// see keypress(): 'm' key changes matlSel
-  this.matl0 = new Material(this.matlSel);	
+  this.matlSel = MATL_RED_PLASTIC;				// see keypress(): 'm' key changes matlSel
+  this.matl0 = new Material(this.matlSel);
 
 };
 
@@ -734,7 +726,7 @@ VBObox2.prototype.init = function () {
     this.vboLoc);				  // the ID# the GPU uses for this buffer.
 
   gl.bufferData(gl.ARRAY_BUFFER, 			  // GLenum target(same as 'bindBuffer()')
-  g_vboContents, 		// JavaScript Float32Array
+    g_vboContents, 		// JavaScript Float32Array
     gl.STATIC_DRAW);			// Usage hint.  
 
 
@@ -760,26 +752,26 @@ VBObox2.prototype.init = function () {
     //return;
   }
 
-  this.lamp0.u_pos  = gl.getUniformLocation(gl.program, 'u_LampSet[0].pos');	
+  this.lamp0.u_pos = gl.getUniformLocation(gl.program, 'u_LampSet[0].pos');
   this.lamp0.u_ambi = gl.getUniformLocation(gl.program, 'u_LampSet[0].ambi');
   this.lamp0.u_diff = gl.getUniformLocation(gl.program, 'u_LampSet[0].diff');
   this.lamp0.u_spec = gl.getUniformLocation(gl.program, 'u_LampSet[0].spec');
-  if( !this.lamp0.u_pos || !this.lamp0.u_ambi	|| !this.lamp0.u_diff || !this.lamp0.u_spec	) {
+  if (!this.lamp0.u_pos || !this.lamp0.u_ambi || !this.lamp0.u_diff || !this.lamp0.u_spec) {
     console.log('Failed to get GPUs Lamp0 storage locations');
     return;
   }
 
   this.matl0.uLoc_Ke = gl.getUniformLocation(gl.program, 'u_MatlSet[0].emit');
-	this.matl0.uLoc_Ka = gl.getUniformLocation(gl.program, 'u_MatlSet[0].ambi');
-	this.matl0.uLoc_Kd = gl.getUniformLocation(gl.program, 'u_MatlSet[0].diff');
-	this.matl0.uLoc_Ks = gl.getUniformLocation(gl.program, 'u_MatlSet[0].spec');
-	this.matl0.uLoc_Kshiny = gl.getUniformLocation(gl.program, 'u_MatlSet[0].shiny');
-	if(!this.matl0.uLoc_Ke || !this.matl0.uLoc_Ka || !this.matl0.uLoc_Kd 
-			  	  		    || !this.matl0.uLoc_Ks || !this.matl0.uLoc_Kshiny
-		 ) {
-		console.log('Failed to get GPUs Reflectance storage locations');
-		return;
-	}
+  this.matl0.uLoc_Ka = gl.getUniformLocation(gl.program, 'u_MatlSet[0].ambi');
+  this.matl0.uLoc_Kd = gl.getUniformLocation(gl.program, 'u_MatlSet[0].diff');
+  this.matl0.uLoc_Ks = gl.getUniformLocation(gl.program, 'u_MatlSet[0].spec');
+  this.matl0.uLoc_Kshiny = gl.getUniformLocation(gl.program, 'u_MatlSet[0].shiny');
+  if (!this.matl0.uLoc_Ke || !this.matl0.uLoc_Ka || !this.matl0.uLoc_Kd
+    || !this.matl0.uLoc_Ks || !this.matl0.uLoc_Kshiny
+  ) {
+    console.log('Failed to get GPUs Reflectance storage locations');
+    return;
+  }
 }
 
 VBObox2.prototype.switchToMe = function () {
@@ -830,25 +822,15 @@ VBObox2.prototype.adjust = function () {
   gl.uniform1i(this.u_lightModeLoc, g_light_mode)
   gl.uniform3f(this.u_eyePosWorldLoc, g_eye_point_v[0], g_eye_point_v[1], g_eye_point_v[2]);
 
-  this.lamp0.I_pos.elements.set( [6.0, 5.0, 5.0]);
+  this.lamp0.I_pos.elements.set([6.0, 5.0, 5.0]);
   this.lamp0.I_ambi.elements.set([0.4, 0.4, 0.4]);
   this.lamp0.I_diff.elements.set([1.0, 1.0, 1.0]);
   this.lamp0.I_spec.elements.set([1.0, 1.0, 1.0]);
 
-  gl.uniform3fv(this.lamp0.u_pos,  this.lamp0.I_pos.elements.slice(0,3));
+  gl.uniform3fv(this.lamp0.u_pos, this.lamp0.I_pos.elements.slice(0, 3));
   gl.uniform3fv(this.lamp0.u_ambi, this.lamp0.I_ambi.elements);		// ambient
   gl.uniform3fv(this.lamp0.u_diff, this.lamp0.I_diff.elements);		// diffuse
   gl.uniform3fv(this.lamp0.u_spec, this.lamp0.I_spec.elements);		// Specular
-
-	//---------------For the Material object(s):
-	gl.uniform3fv(this.matl0.uLoc_Ke, this.matl0.K_emit.slice(0,3));				// Ke emissive
-	gl.uniform3fv(this.matl0.uLoc_Ka, this.matl0.K_ambi.slice(0,3));				// Ka ambient
-  gl.uniform3fv(this.matl0.uLoc_Kd, this.matl0.K_diff.slice(0,3));				// Kd	diffuse
-	gl.uniform3fv(this.matl0.uLoc_Ks, this.matl0.K_spec.slice(0,3));				// Ks specular
-	gl.uniform1i(this.matl0.uLoc_Kshiny, parseInt(this.matl0.K_shiny, 10));     // Kshiny 
-
-
-
 
   var pvMat = new Matrix4()
   pvMat.set(g_projMatrix).multiply(g_viewMatrix)
@@ -876,27 +858,161 @@ VBObox2.prototype.reload = function () {
     g_vboContents);   // the JS source-data array used to fill VBO
 }
 
+function setMat(self, mat) {
+  self.matl0.setMatl(mat);								// set new material reflectances,
+
+  //---------------For the Material object(s):
+  gl.uniform3fv(self.matl0.uLoc_Ke, self.matl0.K_emit.slice(0, 3));				// Ke emissive
+  gl.uniform3fv(self.matl0.uLoc_Ka, self.matl0.K_ambi.slice(0, 3));				// Ka ambient
+  gl.uniform3fv(self.matl0.uLoc_Kd, self.matl0.K_diff.slice(0, 3));				// Kd	diffuse
+  gl.uniform3fv(self.matl0.uLoc_Ks, self.matl0.K_spec.slice(0, 3));				// Ks specular
+  gl.uniform1i(self.matl0.uLoc_Kshiny, parseInt(self.matl0.K_shiny, 10));     // Kshiny 
+
+
+}
 
 function drawAllObjs(self) {
-  self.ModelMatrix.setTranslate( 0,0, 0);
+  //Sphere
+
+  setMat(self, g_matlSel)
+  self.ModelMatrix.setTranslate(0, 0, 0);
   self.ModelMatrix.rotate(g_angleNow0, 0, 0, 1);
   setModelMatNormalMat(self)
   gl.drawArrays(gl.TRIANGLE_STRIP, g_sphere_start, g_sphere_verts.length / 8)
 
-  self.ModelMatrix.setTranslate( 0,-3, 0);
-  self.ModelMatrix.rotate(g_angleNow0, 0, 0, 1);
+  /*
+    self.ModelMatrix.setTranslate( 0,-3, 0);
+    self.ModelMatrix.rotate(g_angleNow0, 0, 0, 1);
+    setModelMatNormalMat(self)
+    gl.drawArrays(gl.TRIANGLES, g_pyra_start / 8, g_pyramide_verts.length / 8)
+  
+  
+    self.ModelMatrix.setTranslate( 0,3, 0);
+    self.ModelMatrix.rotate(g_angleNow0, 0, 0, 1);
+    setModelMatNormalMat(self)
+    gl.drawArrays(gl.TRIANGLE_STRIP, g_tor_start / 8, g_tor_verts.length / 8 )
+  
+    
+    self.ModelMatrix.setTranslate( -3,0, 0);
+    self.ModelMatrix.rotate(g_angleNow0, 0, 0, 1);
+    setModelMatNormalMat(self)
+    gl.drawArrays(gl.TRIANGLE_STRIP, g_cyl_start / 8, g_cyl_verts.length / 8 )
+  */
+  //matlSel = (matlSel +1)%MATL_DEFAULT;	// see materials_Ayerdi.js for list
+  drawPyramidStack(self)
+  drawTree(self)
+  drawButterfly(self)
+}
+
+function drawButterfly(self) {
+  setMat(self, 8)
+  pushMatrix(self.ModelMatrix)
+  self.ModelMatrix.setTranslate(-5, -3, 1);
+  self.ModelMatrix.scale(0.3,0.3,0.3);
+  self.ModelMatrix.rotate(g_angleNow0,0,0,1)
+  self.ModelMatrix.translate(2, 0, 0);
+  self.ModelMatrix.rotate(90,0,0,1)
+  
+  pushMatrix(self.ModelMatrix)
+  self.ModelMatrix.scale(1,0.7,0.5)
+  self.ModelMatrix.rotate(90,0,1,0)
+  setModelMatNormalMat(self)
+  gl.drawArrays(gl.TRIANGLE_STRIP, g_cyl_start / 8, g_cyl_verts.length / 8 )
+  self.ModelMatrix = popMatrix(self.ModelMatrix)
+  
+  setMat(self, 6)
+  pushMatrix(self.ModelMatrix)
+  self.ModelMatrix.rotate(20+g_angleNow2,1,0,0)
+  self.ModelMatrix.translate(0,1.7,0)
+  self.ModelMatrix.scale(0.2,1,0.5)
+  setModelMatNormalMat(self)
+  gl.drawArrays(gl.TRIANGLE_STRIP, g_tor_start / 8, g_tor_verts.length / 8 )
+  self.ModelMatrix = popMatrix(self.ModelMatrix)
+  
+  pushMatrix(self.ModelMatrix)
+  self.ModelMatrix.rotate(-20-g_angleNow2,1,0,0)
+  self.ModelMatrix.translate(0,-1.7,0)
+  self.ModelMatrix.scale(0.2,1,0.5)
+  setModelMatNormalMat(self)
+  gl.drawArrays(gl.TRIANGLE_STRIP, g_tor_start / 8, g_tor_verts.length / 8 )
+  self.ModelMatrix = popMatrix(self.ModelMatrix)
+
+  
+  self.ModelMatrix = popMatrix(self.ModelMatrix)
+}
+
+function drawPyramidStack(self) {
+
+  setMat(self, 14)
+  pushMatrix(self.ModelMatrix)
+  self.ModelMatrix.setTranslate(-5, -5, 0);
   setModelMatNormalMat(self)
   gl.drawArrays(gl.TRIANGLES, g_pyra_start / 8, g_pyramide_verts.length / 8)
 
 
-  self.ModelMatrix.setTranslate( 0,3, 0);
-  self.ModelMatrix.rotate(g_angleNow0, 0, 0, 1);
+  self.ModelMatrix.translate(0, 0, 2);
+  self.ModelMatrix.rotate(180, 1, 0, 0);
+  self.ModelMatrix.rotate(-2 * g_angleNow0, 0, 0, 1);
+  self.ModelMatrix.translate(0, 0, 1);
+  self.ModelMatrix.rotate(20, 1, 0, 0);
+  self.ModelMatrix.translate(0, 0, -1);
+  self.ModelMatrix.rotate(2 * g_angleNow0, 0, 0, 1);
   setModelMatNormalMat(self)
-  gl.drawArrays(gl.TRIANGLE_STRIP, g_tor_start / 8, g_tor_verts.length / 8 )
+  gl.drawArrays(gl.TRIANGLES, g_pyra_start / 8, g_pyramide_verts.length / 8)
 
-  
-  self.ModelMatrix.setTranslate( -3,0, 0);
-  self.ModelMatrix.rotate(g_angleNow0, 0, 0, 1);
-  setModelMatNormalMat(self)
-  gl.drawArrays(gl.TRIANGLE_STRIP, g_cyl_start / 8, g_cyl_verts.length / 8 )
+
+  self.ModelMatrix = popMatrix(self.ModelMatrix)
+}
+
+function drawTree(self) {
+  setMat(self, 7)
+
+  pushMatrix(self.ModelMatrix)
+  self.ModelMatrix.setTranslate(-5, 5, 0.5);
+  self.ModelMatrix.scale(0.5, 0.5, 0.5)
+
+  drawTreeRec(self, 5, 80)
+  self.ModelMatrix = popMatrix(self.ModelMatrix)
+
+
+}
+function drawTreeRec(self, i, angle) {
+  if (i > 0) {
+    pushMatrix(self.ModelMatrix)
+    self.ModelMatrix.scale(0.5, 0.25, 1);
+    setModelMatNormalMat(self)
+    gl.drawArrays(gl.TRIANGLE_STRIP, g_cyl_start / 8, g_cyl_verts.length / 8)
+    self.ModelMatrix = popMatrix(self.ModelMatrix)
+
+    self.ModelMatrix.translate(0, 0, 1);
+    self.ModelMatrix.scale(1, 1, 0.7);
+
+    pushMatrix(self.ModelMatrix)
+    self.ModelMatrix.rotate(angle + g_angleNow1, 1, 0, 0)
+    self.ModelMatrix.translate(0, 0, 1);
+    self.ModelMatrix.scale(0.5, 0.25, 1);
+    drawTreeRec(self, i - 1, angle * 1.5 + g_angleNow1)
+    self.ModelMatrix = popMatrix(self.ModelMatrix)
+
+    pushMatrix(self.ModelMatrix)
+    self.ModelMatrix.rotate(0.3 * angle + g_angleNow1, 1, 0, 0)
+    self.ModelMatrix.translate(0, 0, 1);
+    self.ModelMatrix.scale(0.5, 0.25, 1);
+    drawTreeRec(self, i - 1, angle + g_angleNow1)
+    self.ModelMatrix = popMatrix(self.ModelMatrix)
+
+    pushMatrix(self.ModelMatrix)
+    self.ModelMatrix.rotate(-0.5 * angle + g_angleNow1, 1, 0, 0)
+    self.ModelMatrix.translate(0, 0, 1);
+    self.ModelMatrix.scale(0.5, 0.25, 1);
+    drawTreeRec(self, i - 1, angle + g_angleNow1)
+    self.ModelMatrix = popMatrix(self.ModelMatrix)
+
+    pushMatrix(self.ModelMatrix)
+    self.ModelMatrix.rotate(-angle + g_angleNow1, 1, 0, 0)
+    self.ModelMatrix.translate(0, 0, 1);
+    self.ModelMatrix.scale(0.5, 0.25, 1);
+    drawTreeRec(self, i - 1, angle * 1.5 + g_angleNow1)
+    self.ModelMatrix = popMatrix(self.ModelMatrix)
+  }
 }
