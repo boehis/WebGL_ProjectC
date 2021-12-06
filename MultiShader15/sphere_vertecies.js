@@ -1,5 +1,5 @@
-var floatsPerVertex = 7
 function makeSphere() {
+  var floatsPerVertex = 8
   //==============================================================================
   // Make a sphere from one OpenGL TRIANGLE_STRIP primitive.   Make ring-like 
   // equal-lattitude 'slices' of the sphere (bounded by planes of constant z), 
@@ -9,9 +9,6 @@ function makeSphere() {
                         // (choose odd # or prime# to avoid accidental symmetry)
     var sliceVerts	= 27;	// # of vertices around the top edge of the slice
                         // (same number of vertices on bottom of slice, too)
-    var topColr = new Float32Array([0,0,0]);	// North Pole: light gray
-    var equColr = new Float32Array([0,0,0]);	// Equator:    bright green
-    var botColr = new Float32Array([1,1,1]);	// South Pole: brightest gray.
     var sliceAngle = Math.PI/slices;	// lattitude angle spanned by one slice.
   
     // Create a (global) array to hold this sphere's vertices:
@@ -66,21 +63,12 @@ function makeSphere() {
           sphVerts[j+2] = cos1;																				// z
           sphVerts[j+3] = 1.0;																				// w.		
         }
-        if(s==0) {	// finally, set some interesting colors for vertices:
-          sphVerts[j+4]=topColr[0]; 
-          sphVerts[j+5]=topColr[1]; 
-          sphVerts[j+6]=topColr[2];	
-          }
-        else if(s==slices-1) {
-          sphVerts[j+4]=botColr[0]; 
-          sphVerts[j+5]=botColr[1]; 
-          sphVerts[j+6]=botColr[2];	
-        }
-        else {
-            sphVerts[j+4]= equColr[0]+j/elementCount; 
-            sphVerts[j+5]= equColr[1]+j/elementCount; 
-            sphVerts[j+6]= equColr[2]+j/elementCount;					
-        }
+
+        //Normals
+        sphVerts[j+4  ] = sphVerts[j  ]
+        sphVerts[j+4+1] = sphVerts[j+1]
+        sphVerts[j+4+2] = sphVerts[j+2]
+        sphVerts[j+4+3] = sphVerts[j+3]
       }
     }
     return sphVerts

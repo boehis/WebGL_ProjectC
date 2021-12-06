@@ -297,9 +297,11 @@ function VBObox1() {
     '  gl_FragColor = v_color; \n' +
     '}\n';
 
-  this.vboContents = makeSphere()
+  //this.vboContents = makeSphere()
+  this.vboContents = make_pyramide_vertecies()
+  console.log(this.vboContents);
 
-  this.vboVerts = this.vboContents.length / 7;							// # of vertices held in 'vboContents' array;
+  this.vboVerts = this.vboContents.length / 8;							// # of vertices held in 'vboContents' array;
   this.FSIZE = this.vboContents.BYTES_PER_ELEMENT;
   // bytes req'd by 1 vboContents array element;
   // (why? used to compute stride and offset 
@@ -316,10 +318,8 @@ function VBObox1() {
   //----------------------Attribute sizes
   this.vboFcount_a_Pos1 = 4;    // # of floats in the VBO needed to store the
   // attribute named a_Pos1. (4: x,y,z,w values)
-  this.vboFcount_a_Colr1 = 3;   // # of floats for this attrib (r,g,b values)
-  this.vboFcount_a_Normal = 0;  // # of floats for this attrib (just one!)   
+  this.vboFcount_a_Normal = 4;  // # of floats for this attrib (just one!)   
   console.assert((this.vboFcount_a_Pos1 +     // check the size of each and
-    this.vboFcount_a_Colr1 +
     this.vboFcount_a_Normal) *   // every attribute in our VBO
     this.FSIZE == this.vboStride, // for agreeement with'stride'
     "Uh oh! VBObox1.vboStride disagrees with attribute-size values!");
@@ -327,15 +327,7 @@ function VBObox1() {
   //----------------------Attribute offsets
   this.vboOffset_a_Pos1 = 0;    //# of bytes from START of vbo to the START
   // of 1st a_Pos1 attrib value in vboContents[]
-  this.vboOffset_a_Colr1 = (this.vboFcount_a_Pos1) * this.FSIZE;
-  // == 4 floats * bytes/float
-  //# of bytes from START of vbo to the START
-  // of 1st a_Colr1 attrib value in vboContents[]
-  this.vboOffset_a_Normal = (this.vboFcount_a_Pos1 +
-    this.vboFcount_a_Colr1) * this.FSIZE;
-  // == 7 floats * bytes/float
-  // # of bytes from START of vbo to the START
-  // of 1st a_PtSize attrib value in vboContents[]
+  this.vboOffset_a_Normal = (this.vboFcount_a_Pos1) * this.FSIZE;
 
   //-----------------------GPU memory locations:                                
   this.vboLoc;									// GPU Location for Vertex Buffer Object, 
@@ -442,9 +434,9 @@ VBObox1.prototype.switchToMe = function () {
   gl.vertexAttribPointer(this.a_positionLoc, this.vboFcount_a_Pos1,
     gl.FLOAT, false,
     this.vboStride, this.vboOffset_a_Pos1);
-  gl.vertexAttribPointer(this.a_normalLoc, this.vboFcount_a_Pos1,
+  gl.vertexAttribPointer(this.a_normalLoc, this.vboFcount_a_Normal,
     gl.FLOAT, false,
-    this.vboStride, this.vboOffset_a_Pos1);
+    this.vboStride, this.vboOffset_a_Normal);
 
   gl.enableVertexAttribArray(this.a_positionLoc);
   gl.enableVertexAttribArray(this.a_normalLoc);
@@ -521,7 +513,7 @@ VBObox1.prototype.draw = function () {
       '.draw() call you needed to call this.switchToMe()!!');
   }
 
-  gl.drawArrays(gl.TRIANGLE_STRIP, 0, this.vboVerts)
+  gl.drawArrays(gl.TRIANGLES, 0, this.vboVerts)
 }
 
 
@@ -537,36 +529,6 @@ VBObox1.prototype.reload = function () {
     this.vboContents);   // the JS source-data array used to fill VBO
 }
 
-/*
-VBObox1.prototype.empty = function() {
-//=============================================================================
-// Remove/release all GPU resources used by this VBObox object, including any 
-// shader programs, attributes, uniforms, textures, samplers or other claims on 
-// GPU memory.  However, make sure this step is reversible by a call to 
-// 'restoreMe()': be sure to retain all our Float32Array data, all values for 
-// uniforms, all stride and offset values, etc.
-//
-//
-// 		********   YOU WRITE THIS! ********
-//
-//
-//
-}
-
-VBObox1.prototype.restore = function() {
-//=============================================================================
-// Replace/restore all GPU resources used by this VBObox object, including any 
-// shader programs, attributes, uniforms, textures, samplers or other claims on 
-// GPU memory.  Use our retained Float32Array data, all values for  uniforms, 
-// all stride and offset values, etc.
-//
-//
-// 		********   YOU WRITE THIS! ********
-//
-//
-//
-}
-*/
 
 //=============================================================================
 //=============================================================================
@@ -678,7 +640,7 @@ function VBObox2() {
 */
   this.vboContents = makeSphere()
 
-  this.vboVerts = this.vboContents.length / 7;							// # of vertices held in 'vboContents' array;
+  this.vboVerts = this.vboContents.length / 8;							// # of vertices held in 'vboContents' array;
   this.FSIZE = this.vboContents.BYTES_PER_ELEMENT;
   // bytes req'd by 1 vboContents array element;
   // (why? used to compute stride and offset 
@@ -694,11 +656,8 @@ function VBObox2() {
 
   //----------------------Attribute sizes
   this.vboFcount_a_Pos1 = 4;    // # of floats in the VBO needed to store the
-  // attribute named a_Pos1. (4: x,y,z,w values)
-  this.vboFcount_a_Colr1 = 3;   // # of floats for this attrib (r,g,b values)
-  this.vboFcount_a_Normal = 0;  // # of floats for this attrib (just one!)   
+  this.vboFcount_a_Normal = 4;  // # of floats for this attrib (just one!)   
   console.assert((this.vboFcount_a_Pos1 +     // check the size of each and
-    this.vboFcount_a_Colr1 +
     this.vboFcount_a_Normal) *   // every attribute in our VBO
     this.FSIZE == this.vboStride, // for agreeement with'stride'
     "Uh oh! VBObox1.vboStride disagrees with attribute-size values!");
@@ -706,15 +665,8 @@ function VBObox2() {
   //----------------------Attribute offsets
   this.vboOffset_a_Pos1 = 0;    //# of bytes from START of vbo to the START
   // of 1st a_Pos1 attrib value in vboContents[]
-  this.vboOffset_a_Colr1 = (this.vboFcount_a_Pos1) * this.FSIZE;
-  // == 4 floats * bytes/float
-  //# of bytes from START of vbo to the START
-  // of 1st a_Colr1 attrib value in vboContents[]
-  this.vboOffset_a_Normal = (this.vboFcount_a_Pos1 +
-    this.vboFcount_a_Colr1) * this.FSIZE;
-  // == 7 floats * bytes/float
-  // # of bytes from START of vbo to the START
-  // of 1st a_PtSize attrib value in vboContents[]
+  this.vboOffset_a_Normal = (this.vboFcount_a_Pos1) * this.FSIZE;
+
 
   //-----------------------GPU memory locations:                                
   this.vboLoc;									// GPU Location for Vertex Buffer Object, 
@@ -826,9 +778,9 @@ VBObox2.prototype.switchToMe = function () {
   gl.vertexAttribPointer(this.a_positionLoc, this.vboFcount_a_Pos1,
     gl.FLOAT, false,
     this.vboStride, this.vboOffset_a_Pos1);
-  gl.vertexAttribPointer(this.a_normalLoc, this.vboFcount_a_Pos1,
+  gl.vertexAttribPointer(this.a_normalLoc, this.vboFcount_a_Normal,
     gl.FLOAT, false,
-    this.vboStride, this.vboOffset_a_Pos1);
+    this.vboStride, this.vboOffset_a_Normal);
 
   gl.enableVertexAttribArray(this.a_positionLoc);
   gl.enableVertexAttribArray(this.a_normalLoc);
